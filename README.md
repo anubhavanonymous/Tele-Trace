@@ -41,7 +41,9 @@ pip install -r requirements.txt --break-system-packages
 3. Create a new app (any name)
 4. Copy your **API ID** and **API Hash**
 
-> Use an aged Telegram account for best results.
+
+> ⚠ Use an aged Telegram account (1+ years old) for best results. New accounts are heavily restricted by Telegram and may fail to resolve phone number lookups or get temporarily banned from making API requests.
+> 
 
 ---
 
