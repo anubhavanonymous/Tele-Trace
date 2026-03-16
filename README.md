@@ -48,8 +48,7 @@ pip install -r requirements.txt --break-system-packages
 ## Running
 
 ```bash
-cd tg_osint_tool
-python app.py
+python tele-trace.py
 ```
 
 Open **http://localhost:7777** in your browser.
