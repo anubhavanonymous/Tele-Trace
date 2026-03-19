@@ -34,7 +34,7 @@ pip install -r requirements.txt --break-system-packages
 
 ---
 
-## Getting API Credentials
+## Getting API Credentials ⚙️
 
 1. Visit https://my.telegram.org and log in
 2. Click **API Development Tools**
@@ -69,45 +69,45 @@ To switch accounts, click **Switch Account** in the top bar.
 
 ---
 
-## Features
+## 💠 Features
 
-### Profile Scan
+### 👤 Profile Scan
 Search by **phone number** or **@username**. Extracts:
 - Name, bio, last seen status
 - User ID, phone, all active usernames
 - Account flags: Bot, Fake, Scam, Premium, Verified
 - Profile photos and video DPs with upload dates
 
-### Account Age Estimate
+### 🧓🏻 Account Age Estimate
 Estimates account creation date from the user ID using
 Telegram's sequential ID system. Accurate to ±1-2 months.
 
-### Trust Score
+### 🔰 Trust Score
 0–100% confidence score based on 9 factors:
 username pattern, bio presence, photo count, account age,
 status visibility, name history, premium/verified status,
 no flags, and platform presence.
 
-### Username Intelligence
+### 🔍 Username Intelligence
 - Pattern detection (name_surname, CamelCase, gaming style, etc.)
 - Possible real name extraction
 - Possible region from name roots
 - Birth year detection
 - Entropy score
 
-### Bio Analysis
+### 📝 Bio Analysis
 - Language detection (Hindi, Arabic, Russian, Chinese, English + mixed)
 - Possible name extraction
 - External links (Instagram, GitHub, bare domains like site.com, etc.)
 - Emotion score (Positive / Negative / Neutral)
 - Hashtags and @mentions
 
-### Name & Username History
+### ✍🏻 Name & Username History
 Queries SangMata bot for recorded name/username changes with timestamps.
 History request is sent before photo downloads so the reply is ready
 by the time scanning completes.
 
-### Cross-Platform Search
+### 🔭 Cross-Platform Search
 Checks the username across 9 platforms simultaneously:
 
 | Platform  | Detection Method                        |
@@ -124,12 +124,12 @@ Checks the username across 9 platforms simultaneously:
 
 Found profiles show as clickable links.
 
-### Reverse Image Search
+### 🔎 Reverse Image Search
 Each photo card has Google Lens and Yandex buttons.
 Photos are pre-uploaded to catbox.moe in the background
 after scan — clicking opens results instantly.
 
-### Exports
+### 📑 Exports
 - **JSON** — full structured data including trust score,
   username intel, bio analysis, history, cross-platform results, media
 - **PDF** — printable HTML report with all sections.
@@ -164,7 +164,7 @@ tg_osint_tool/
 
 ---
 
-## Disclaimer
+## Disclaimer ⚠️
 
 This tool is for **educational and authorized research purposes only**.
 
@@ -175,7 +175,7 @@ This tool is for **educational and authorized research purposes only**.
 
 ---
 
-## Author
+## Author 👤
 
 **Anubhav Kashyap**
 Telegram / GitHub: [@anubhavanonymous](https://t.me/anubhavanonymous)
