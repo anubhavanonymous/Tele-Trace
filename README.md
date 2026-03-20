@@ -17,6 +17,7 @@ Runs entirely on your device — no cloud, no data sharing.
   <img src="https://img.shields.io/badge/OSINT-Tool-red?style=for-the-badge&logo=searchengin&logoColor=white">
   <img src="https://img.shields.io/badge/Platform-Telegram-blue?style=for-the-badge&logo=telegram&logoColor=white">
 </p>
+
 ---
 
 ## Requirements 📌
@@ -50,9 +51,7 @@ pip install -r requirements.txt --break-system-packages
 3. Create a new app (any name)
 4. Copy your **API ID** and **API Hash**
 
-
 > ⚠ Use an aged Telegram account (1+ years old) for best results. New accounts are heavily restricted by Telegram and may fail to resolve phone number lookups or get temporarily banned from making API requests.
-> 
 
 ---
 
@@ -99,16 +98,30 @@ no flags, and platform presence.
 
 ### 🔍 Username Intelligence
 - Pattern detection (name_surname, CamelCase, gaming style, etc.)
+- **Type** — Likely real name vs Nickname/Handle (detects shadow, ghost, king, wolf, hacker, cyber, etc.)
 - Possible real name extraction
+- **Name Origin** — Indian, Arabic/Muslim, Russian/Slavic, Western, Chinese/Korean
+- **Name Meaning** — dictionary of common names (e.g. Aditya = Sun/First, Arjun = Bright, Ali = High/Exalted)
 - Possible region from name roots
-- Birth year detection
+- Birth year detection (extended range: 1970–2022)
+- **Name Match** — compares username tokens vs display name, shows consistency score
 - Entropy score
 
 ### 📝 Bio Analysis
-- Language detection (Hindi, Arabic, Russian, Chinese, English + mixed)
+- Language detection (Hindi, Arabic, Russian, Chinese, Korean, English + mixed)
 - Possible name extraction
+- **Age detection** — patterns like `21 y.o`, `born 2002`, `class of 2020`
+- **Gender signals** — pronouns (he/him, she/her, they/them) + gender emojis
+- **Occupation** — 11 categories: Developer, Designer, Student, Content Creator, Entrepreneur, Trader, Writer, Artist, Gamer, Cybersecurity, Doctor/Medical
+- **Location hints** — flag emojis + 40+ city/country name detection
+- **Relationship status** — Single, In a relationship, Engaged, Married, Parent
+- **Religion signals** — Islam, Christianity, Hinduism, Sikhism via keywords + symbols
+- **Email in bio** — extracts any email address present
+- **Phone in bio** — extracts phone numbers present
+- **Crypto presence** — keyword detection + BTC/ETH wallet address extraction
 - External links (Instagram, GitHub, bare domains like site.com, etc.)
 - Emotion score (Positive / Negative / Neutral)
+- **Emoji usage** — flags heavy emoji use (5+ emojis)
 - Hashtags and @mentions
 
 ### ✍🏻 Name & Username History
