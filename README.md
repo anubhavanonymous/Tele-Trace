@@ -2,12 +2,8 @@
   <img src="banner.png" alt="Tele-Trace Intelligence Banner" width="100%">
 </p>
 
-```
-  ──────────────────────────────────────────────
-       ◈  TELE-TRACE  INTELLIGENCE  ◈
-            Telegram OSINT Tool v2.0
-  ──────────────────────────────────────────────
-```
+
+       ◈  TELE-TRACE  INTELLIGENCE
 
 A local web-based Telegram OSINT tool built with Flask + Telethon.
 Runs entirely on your device — no cloud, no data sharing.
