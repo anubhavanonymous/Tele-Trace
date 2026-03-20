@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Tele-Trace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e13;--surface:#0f1520;--card:#131c28;--card2:#162030;
+  --border:#1e2d3d;--border2:#243547;
+  --accent:#00d4ff;--accent2:#0099cc;--accent-glow:rgba(0,212,255,.15);
+  --green:#00e676;--red:#ff4444;--yellow:#ffcc00;--orange:#ff8c00;--purple:#a855f7;
+  --text:#e8f0fe;--sub:#6b8aaa;--sub2:#4a6580;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;-webkit-tap-highlight-color:transparent;overflow-x:hidden;}
+
+/* scrollbar */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* ── NOISE TEXTURE OVERLAY ── */
+body::before{content:"";position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4;}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;position:relative;z-index:1;}
+.screen.active{display:flex;flex-direction:column;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
+
+/* ── LOGIN ── */
+#login-screen{
+  align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(ellipse at 50% 0%,rgba(0,212,255,.06) 0%,transparent 70%);
+}
+.login-wrap{width:100%;max-width:440px;animation:fadeUp .4s ease;}
+
+.brand{text-align:center;margin-bottom:32px;}
+.brand-icon{
+  width:64px;height:64px;margin:0 auto 14px;
+  background:linear-gradient(135deg,rgba(0,212,255,.2),rgba(0,153,204,.1));
+  border:1px solid rgba(0,212,255,.3);border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 30px rgba(0,212,255,.15);
+}
+.brand-icon svg{width:32px;height:32px;fill:var(--accent);}
+.brand-name{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--accent);letter-spacing:-.5px;}
+.brand-sub{font-size:12px;color:var(--sub);letter-spacing:2px;text-transform:uppercase;margin-top:4px;}
+
+.login-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:28px 24px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px rgba(0,212,255,.04);
+}
+
+.section-label{
+  font-family:var(--mono);font-size:10px;font-weight:600;
+  color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;
+  margin-bottom:16px;display:flex;align-items:center;gap:8px;
+}
+.section-label::after{content:"";flex:1;height:1px;background:var(--border);}
+
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11px;font-weight:500;color:var(--sub);letter-spacing:.5px;margin-bottom:6px;}
+.field input{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:11px 13px;color:var(--text);
+  font-size:14px;font-family:var(--mono);outline:none;
+  transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;
+}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,.1);}
+.field input::placeholder{color:var(--sub2);font-family:var(--sans);}
+
+/* Phone row */
+.phone-row{display:flex;gap:8px;}
+.phone-input-wrap{flex:1;min-width:0;}
+.phone-input-wrap input{height:42px;padding:0 13px;}
+
+/* Country picker */
+.cc-wrap{position:relative;flex-shrink:0;}
+.cc-btn{
+  display:flex;align-items:center;gap:5px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:0 10px;height:42px;
+  cursor:pointer;font-family:var(--sans);font-size:13px;color:var(--text);
+  transition:border-color .2s;white-space:nowrap;min-width:80px;
+}
+.cc-btn:focus{outline:none;border-color:var(--accent);}
+.cc-btn.open{border-color:var(--accent);}
+.cc-flag{font-size:16px;line-height:1;}
+.cc-dial{font-size:12px;color:var(--sub);font-family:var(--mono);}
+.cc-arrow{width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;border-top:4px solid var(--sub);transition:transform .2s;flex-shrink:0;}
+.cc-btn.open .cc-arrow{transform:rotate(180deg);}
+
+.cc-dropdown{
+  position:fixed;background:var(--card2);border:1px solid var(--border2);
+  border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.8);
+  z-index:9999;overflow:hidden;display:none;animation:fadeUp .12s ease;
+}
+.cc-dropdown.open{display:block;}
+.cc-search-row{display:flex;align-items:center;gap:8px;padding:10px 13px;border-bottom:1px solid var(--border);}
+.cc-search-row svg{flex-shrink:0;opacity:.4;}
+.cc-search-inp{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:var(--sans);outline:none;}
+.cc-search-inp::placeholder{color:var(--sub2);}
+.cc-list{overflow-y:auto;max-height:220px;}
+.cc-item{display:flex;align-items:center;gap:10px;padding:10px 13px;cursor:pointer;transition:background .1s;}
+.cc-item:hover{background:rgba(0,212,255,.07);}
+.cc-item-flag{font-size:17px;line-height:1;flex-shrink:0;}
+.cc-item-name{flex:1;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cc-item-dial{font-size:12px;color:var(--sub);font-family:var(--mono);flex-shrink:0;}
+
+/* OTP info */
+.otp-box{
+  display:flex;align-items:flex-start;gap:10px;
+  background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);
+  border-radius:8px;padding:11px 13px;margin-bottom:14px;
+  font-size:12.5px;color:var(--sub);line-height:1.5;
+}
+.otp-box svg{flex-shrink:0;margin-top:1px;}
+
+/* Buttons */
+.btn-primary{
+  width:100%;padding:12px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#000;border:none;border-radius:8px;
+  font-size:14px;font-weight:700;font-family:var(--sans);
+  cursor:pointer;margin-top:8px;letter-spacing:.3px;
+  transition:opacity .2s,transform .1s;
+  box-shadow:0 4px 20px rgba(0,212,255,.3);
+}
+.btn-primary:hover{opacity:.9;}
+.btn-primary:active{transform:scale(.98);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn-ghost{
+  width:100%;padding:11px;background:transparent;
+  border:1px solid var(--border);color:var(--sub);
+  border-radius:8px;font-size:13px;font-family:var(--sans);
+  cursor:pointer;margin-top:8px;transition:all .2s;
+}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text);}
+
+.alert{padding:10px 13px;border-radius:8px;font-size:13px;margin-bottom:10px;display:none;}
+.alert.error{background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.25);color:#ff7777;}
+.alert.success{background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);color:var(--green);}
+.alert.show{display:block;}
+
+.spinner{width:14px;height:14px;border:2px solid rgba(0,0,0,.2);border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Credit footer */
+.credit{text-align:center;margin-top:20px;font-size:11px;color:var(--sub2);}
+.credit a{color:var(--sub);text-decoration:none;}
+.credit a:hover{color:var(--accent);}
+
+/* ── APP SCREEN ── */
+#app-screen{display:none;flex-direction:column;min-height:100vh;}
+#app-screen.active{display:flex;}
+
+/* Topbar */
+.topbar{
+  background:rgba(15,21,32,.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:0 16px;height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+  flex-shrink:0;
+}
+.topbar-brand{display:flex;align-items:center;gap:10px;}
+.topbar-logo{
+  width:30px;height:30px;background:linear-gradient(135deg,rgba(0,212,255,.2),rgba(0,153,204,.1));
+  border:1px solid rgba(0,212,255,.25);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.topbar-logo svg{width:17px;height:17px;fill:var(--accent);}
+.topbar-name{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--accent);}
+.topbar-tagline{font-size:10px;color:var(--sub2);letter-spacing:.5px;}
+
+.btn-switch{
+  display:flex;align-items:center;gap:5px;
+  padding:6px 11px;background:transparent;
+  border:1px solid var(--border);border-radius:7px;
+  color:var(--sub);font-size:11.5px;font-family:var(--sans);
+  cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.btn-switch:hover{border-color:var(--red);color:var(--red);background:rgba(255,68,68,.07);}
+.btn-switch svg{width:12px;height:12px;flex-shrink:0;}
+.btn-switch-txt{display:none;}
+@media(min-width:380px){.btn-switch-txt{display:inline;}}
+
+/* App body */
+.app-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px 14px 48px;width:100%;max-width:860px;margin:0 auto;}
+
+/* Search bar */
+.search-wrap{width:100%;max-width:580px;margin-bottom:22px;}
+.search-label{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+.search-row{display:flex;gap:8px;align-items:stretch;}
+/* Search toggle */
+.search-toggle{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:10px;width:fit-content;}
+.toggle-btn{padding:5px 14px;border-radius:6px;border:none;background:transparent;color:var(--sub);font-size:12px;font-weight:600;font-family:var(--mono);cursor:pointer;transition:all .2s;letter-spacing:.3px;}
+.toggle-btn.active{background:var(--card2);color:var(--accent);border:1px solid var(--border2);}
+
+.search-input{
+  flex:1;background:var(--card);border:1px solid var(--border);
+  border-radius:9px;padding:0 14px;height:44px;
+  color:var(--text);font-size:14px;font-family:var(--mono);
+  outline:none;transition:border-color .2s,box-shadow .2s;
+  -webkit-appearance:none;min-width:0;
+}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,.1);}
+.search-input::placeholder{color:var(--sub2);font-family:var(--sans);}
+.btn-search{
+  padding:0 18px;height:44px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#000;border:none;border-radius:9px;
+  font-size:13px;font-weight:700;font-family:var(--sans);
+  cursor:pointer;white-space:nowrap;flex-shrink:0;
+  transition:opacity .2s;
+  box-shadow:0 4px 16px rgba(0,212,255,.25);
+}
+.btn-search:hover{opacity:.9;}
+.btn-search:disabled{opacity:.4;cursor:not-allowed;}
+
+/* Loading */
+.loading-card{display:none;width:100%;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:48px;text-align:center;}
+.loading-card.show{display:block;}
+.loading-ring{width:40px;height:40px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
+.loading-txt{color:var(--sub);font-size:13px;font-family:var(--mono);}
+
+/* ── RESULT ── */
+.result-card{display:none;width:100%;animation:fadeUp .3s ease;}
+.result-card.show{display:block;}
+
+/* Profile banner */
+.profile-banner{
+  background:linear-gradient(135deg,#0d1e30 0%,#0a1520 100%);
+  border:1px solid var(--border);border-radius:14px;
+  padding:20px;margin-bottom:10px;
+  position:relative;overflow:hidden;
+}
+.profile-banner::before{
+  content:"";position:absolute;top:-40px;right:-40px;
+  width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,212,255,.06),transparent 70%);
+  pointer-events:none;
+}
+.profile-top{display:flex;align-items:flex-start;gap:16px;}
+.avatar-wrap{position:relative;flex-shrink:0;}
+.avatar{
+  width:70px;height:70px;border-radius:50%;
+  background:linear-gradient(135deg,#1e3a52,#0d2035);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:24px;font-weight:700;color:var(--accent);
+  overflow:hidden;border:2px solid rgba(0,212,255,.3);
+  box-shadow:0 0 20px rgba(0,212,255,.15);flex-shrink:0;
+}
+.avatar img,.avatar video{width:100%;height:100%;object-fit:cover;}
+.sdot{width:11px;height:11px;border-radius:50%;position:absolute;bottom:2px;right:2px;border:2px solid var(--card);}
+.sdot.online{background:var(--green);box-shadow:0 0 6px var(--green);}
+.sdot.recently{background:var(--green);}
+.sdot.offline,.sdot.hidden{background:var(--sub2);}
+.sdot.week{background:var(--yellow);}
+.sdot.month{background:var(--orange);}
+
+.profile-info{flex:1;min-width:0;}
+.profile-name{font-size:17px;font-weight:600;margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;line-height:1.3;}
+.profile-uname{font-family:var(--mono);font-size:13px;color:var(--accent);margin-bottom:4px;}
+.profile-status{font-size:12px;color:var(--sub);margin-bottom:6px;}
+.profile-status.online{color:var(--green);}
+.profile-bio{font-size:12.5px;color:var(--sub);line-height:1.55;font-style:italic;border-left:2px solid var(--border2);padding-left:10px;margin-top:6px;}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap;font-family:var(--mono);}
+.badge-premium{background:rgba(255,204,0,.12);color:var(--yellow);border:1px solid rgba(255,204,0,.25);}
+.badge-bot{background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.25);}
+.badge-scam,.badge-fake{background:rgba(255,68,68,.12);color:var(--red);border:1px solid rgba(255,68,68,.25);}
+.badge-verified{background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.25);}
+
+/* Info grid */
+.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px;}
+@media(min-width:560px){.info-grid{grid-template-columns:repeat(4,1fr);}}
+.info-tile{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.info-tile-lbl{font-family:var(--mono);font-size:9.5px;font-weight:600;color:var(--sub2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;}
+.info-tile-val{font-size:13px;color:var(--text);font-weight:500;word-break:break-all;font-family:var(--mono);}
+.info-tile-val.accent{color:var(--accent);}
+.info-tile-val.green{color:var(--green);}
+
+/* Flags row */
+.flags-tile{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.flags-title{font-family:var(--mono);font-size:9.5px;font-weight:600;color:var(--sub2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;}
+.flags-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.fchip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;font-family:var(--mono);}
+.fchip.on{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2);}
+.fchip.off{background:rgba(74,101,128,.08);color:var(--sub2);border:1px solid rgba(74,101,128,.15);}
+.fdot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+
+/* Age tile */
+.age-tile{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+.age-icon{width:34px;height:34px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.age-icon svg{width:18px;height:18px;fill:var(--accent);}
+.age-info-text{}
+.age-label{font-family:var(--mono);font-size:9.5px;color:var(--sub2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;}
+.age-value{font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:600;}
+.age-range{font-size:11.5px;color:var(--sub);margin-top:2px;}
+
+/* Intel tiles */
+.intel-tile{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;}
+.intel-title{font-family:var(--mono);font-size:9.5px;font-weight:600;color:var(--sub2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;}
+.intel-rows{display:flex;flex-direction:column;gap:7px;}
+.intel-row{display:flex;align-items:flex-start;gap:10px;}
+.intel-lbl{font-family:var(--mono);font-size:11px;color:var(--sub2);flex-shrink:0;min-width:110px;}
+.intel-val{font-size:12.5px;color:var(--text);flex:1;}
+.intel-val.accent{color:var(--accent);}
+.intel-val.green{color:var(--green);}
+.intel-val.yellow{color:var(--yellow);}
+.intel-val.red{color:var(--red);}
+.intel-tag{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10.5px;font-family:var(--mono);margin:1px 2px;}
+.intel-tag.blue{background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.2);}
+.intel-tag.green{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2);}
+.intel-tag.yellow{background:rgba(255,204,0,.1);color:var(--yellow);border:1px solid rgba(255,204,0,.2);}
+.intel-tag.red{background:rgba(255,68,68,.1);color:var(--red);border:1px solid rgba(255,68,68,.2);}
+.intel-tag.purple{background:rgba(168,85,247,.1);color:#a855f7;border:1px solid rgba(168,85,247,.2);}
+
+/* All usernames */
+.unames-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+.uname-chip{font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.2);}
+
+/* Platform scan tile */
+.platform-tile{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;}
+.platform-title{font-family:var(--mono);font-size:9.5px;font-weight:600;color:var(--sub2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.platform-found-badge{background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.2);border-radius:20px;padding:1px 8px;font-size:10px;font-weight:700;font-family:var(--mono);}
+.platform-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px;}
+.platform-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);text-decoration:none;transition:border-color .2s,background .2s;cursor:default;}
+.platform-item.found{border-color:rgba(0,230,118,.25);background:rgba(0,230,118,.05);cursor:pointer;}
+.platform-item.found:hover{border-color:rgba(0,230,118,.4);background:rgba(0,230,118,.09);}
+.platform-item.available{opacity:.55;}
+.platform-item.error{opacity:.4;}
+.platform-item.checking{opacity:.6;}
+.platform-icon{font-size:15px;line-height:1;flex-shrink:0;}
+.platform-info{flex:1;min-width:0;}
+.platform-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.platform-status{font-family:var(--mono);font-size:9.5px;margin-top:1px;}
+.platform-status.found{color:var(--green);}
+.platform-status.available{color:var(--sub2);}
+.platform-status.error{color:var(--sub2);}
+.platform-status.checking{color:var(--sub2);}
+.platform-status.invalid{color:var(--yellow);}
+.platform-ext{width:10px;height:10px;opacity:.4;flex-shrink:0;}
+
+/* History tile */
+.sangmata-tile{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;}
+.sangmata-header{display:flex;align-items:center;margin-bottom:12px;}
+.sangmata-title{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--sub2);text-transform:uppercase;letter-spacing:.8px;}
+
+.sangmata-body{font-size:12.5px;color:var(--sub);}
+.sangmata-loading{display:flex;align-items:center;gap:8px;color:var(--sub);font-size:12px;font-family:var(--mono);}
+.sm-section{margin-bottom:10px;}
+.sm-section-title{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+.sm-row{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);align-items:baseline;}
+.sm-row:last-child{border-bottom:none;}
+.sm-date{font-family:var(--mono);font-size:10.5px;color:var(--sub2);flex-shrink:0;min-width:130px;}
+.sm-val{font-size:12.5px;color:var(--text);}
+.sm-empty{color:var(--sub2);font-size:12px;font-style:italic;}
+
+/* Media section */
+.media-tile{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;}
+.media-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.media-title{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--sub2);text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:7px;}
+.media-badge{background:var(--accent);color:#000;border-radius:20px;padding:1px 7px;font-size:10px;font-weight:700;font-family:var(--mono);}
+.media-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+@media(min-width:480px){.media-grid{grid-template-columns:repeat(3,1fr);}}
+@media(min-width:680px){.media-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}}
+
+.media-box{background:var(--card2);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .2s,transform .2s;}
+.media-box:hover{border-color:var(--border2);transform:translateY(-2px);}
+.media-thumb-wrap{width:100%;aspect-ratio:1;background:var(--surface);overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;}
+.media-thumb-wrap img,.media-thumb-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
+.vid-play{position:absolute;width:32px;height:32px;background:rgba(0,0,0,.6);border:1.5px solid rgba(255,255,255,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.vid-play svg{width:14px;height:14px;fill:white;margin-left:2px;}
+.broken-img{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;color:var(--sub2);font-size:10px;gap:5px;}
+.broken-img svg{width:24px;height:24px;opacity:.3;}
+.media-date{font-family:var(--mono);font-size:9px;color:var(--sub2);padding:3px 9px;border-top:1px solid var(--border);letter-spacing:.3px;display:flex;align-items:center;gap:4px;}
+.media-date svg{width:8px;height:8px;opacity:.5;}
+.media-foot{padding:7px 9px;display:flex;align-items:center;justify-content:space-between;gap:5px;}
+.media-type-lbl{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--sub2);display:flex;align-items:center;gap:3px;flex-shrink:0;}
+.media-type-lbl.video{color:var(--accent);}
+.btn-dl{display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:rgba(0,212,255,.08);color:var(--accent);border:1px solid rgba(0,212,255,.2);border-radius:6px;font-size:10.5px;font-weight:600;cursor:pointer;text-decoration:none;font-family:var(--mono);transition:background .2s;white-space:nowrap;}
+.btn-dl:hover{background:rgba(0,212,255,.16);}
+.btn-dl svg{width:9px;height:9px;}
+.no-media{text-align:center;padding:28px;color:var(--sub2);font-size:12.5px;font-family:var(--mono);}
+
+/* Trust score */
+.trust-tile{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;}
+.trust-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.trust-title{font-family:var(--mono);font-size:9.5px;font-weight:600;color:var(--sub2);text-transform:uppercase;letter-spacing:.8px;}
+.trust-score-wrap{display:flex;align-items:baseline;gap:6px;}
+.trust-score{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1;}
+.trust-score.low{color:var(--red);}
+.trust-score.medium{color:var(--yellow);}
+.trust-score.high{color:var(--green);}
+.trust-level{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:1px;}
+.trust-level.low{color:var(--red);}
+.trust-level.medium{color:var(--yellow);}
+.trust-level.high{color:var(--green);}
+.trust-bar-wrap{background:var(--surface);border-radius:20px;height:6px;overflow:hidden;margin:10px 0 12px;}
+.trust-bar{height:100%;border-radius:20px;transition:width .7s cubic-bezier(.4,0,.2,1);}
+.trust-bar.low{background:linear-gradient(90deg,#ff4444,#ff6b6b);}
+.trust-bar.medium{background:linear-gradient(90deg,#ffcc00,#ffe066);}
+.trust-bar.high{background:linear-gradient(90deg,#00e676,#69f0ae);}
+.trust-checks{display:flex;flex-direction:column;gap:5px;}
+.tcheck{display:flex;align-items:center;gap:8px;font-size:12.5px;}
+.tcheck-icon{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;font-weight:700;}
+.tcheck-icon.pass{background:rgba(0,230,118,.15);color:var(--green);}
+.tcheck-icon.fail{background:rgba(255,68,68,.12);color:var(--red);}
+.tcheck-icon.warn{background:rgba(255,204,0,.12);color:var(--yellow);}
+.tcheck-txt{color:var(--sub);}
+.tcheck-txt.pass{color:var(--text);}
+
+/* Reverse image search bar */
+.ris-bar{padding:8px 9px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
+.ris-label{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--sub2);text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:4px;}
+.ris-label svg{width:9px;height:9px;opacity:.5;}
+.ris-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;}
+.btn-ris{width:100%;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 8px;border-radius:7px;font-size:11px;font-weight:700;font-family:var(--sans);cursor:pointer;transition:all .2s;white-space:nowrap;min-width:0;letter-spacing:.2px;}
+.btn-ris:hover{filter:brightness(1.15);}
+.btn-ris:disabled{opacity:.35;cursor:not-allowed;filter:none;}
+.btn-ris.google{background:rgba(66,133,244,.14);color:#5b9cf6;border:1.5px solid rgba(66,133,244,.3);}
+.btn-ris.yandex{background:rgba(252,67,20,.12);color:#fc5a2a;border:1.5px solid rgba(252,67,20,.28);}
+.ris-status{font-family:var(--mono);font-size:9.5px;color:var(--sub2);text-align:center;min-height:13px;margin-top:1px;}
+
+/* Export bar */
+.export-bar{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.btn-export{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 14px;background:var(--card);
+  border:1px solid var(--border);border-radius:8px;
+  color:var(--sub);font-size:12px;font-weight:500;
+  font-family:var(--sans);cursor:pointer;transition:all .2s;
+}
+.btn-export:hover{border-color:var(--accent);color:var(--accent);}
+.btn-export svg{width:13px;height:13px;}
+
+/* Scan meta */
+.scan-meta{display:flex;align-items:center;gap:6px;margin-bottom:12px;font-family:var(--mono);font-size:10.5px;color:var(--sub2);}
+.scan-meta svg{width:11px;height:11px;opacity:.5;}
+
+/* Lightbox */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:2000;align-items:center;justify-content:center;padding:12px;}
+.lightbox.open{display:flex;}
+.lb-media{max-width:100%;max-height:90vh;border-radius:10px;}
+.lb-close{position:absolute;top:14px;right:14px;width:34px;height:34px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:50%;color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;}
+.lb-close:hover{background:rgba(255,255,255,.18);}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:300px;width:100%;text-align:center;}
+.modal-title{font-family:var(--mono);font-size:15px;font-weight:700;margin-bottom:8px;color:var(--text);}
+.modal-text{font-size:12.5px;color:var(--sub);margin-bottom:20px;line-height:1.5;}
+.modal-btns{display:flex;gap:8px;}
+.btn-danger{flex:1;padding:10px;background:var(--red);color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:opacity .2s;}
+.btn-danger:hover{opacity:.85;}
+.btn-cancel{flex:1;padding:10px;background:var(--surface);color:var(--sub);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:background .2s;}
+.btn-cancel:hover{background:var(--border);}
+</style>
+</head>
+<body>
+
+<!-- ════ LOGIN ════ -->
+<div class="screen active" id="login-screen">
+  <div class="login-wrap">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/><path d="M9 8h2v8H9zm4 0h2v8h-2z" opacity="0"/><path d="M11 8h2v8h-2z" opacity="0"/></svg>
+      </div>
+      <div class="brand-name">Tele-Trace</div>
+      <div class="brand-sub">Telegram Intelligence</div>
+    </div>
+
+    <div class="login-card">
+      <div id="alert-box" class="alert"></div>
+
+      <div id="step-creds">
+        <div class="section-label">API Credentials</div>
+        <div class="field">
+          <label>API ID</label>
+          <input type="text" id="api-id" placeholder="12345678" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label>API HASH</label>
+          <input type="text" id="api-hash" placeholder="32-character hash string">
+        </div>
+        <div class="field">
+          <label>Phone Number</label>
+          <div class="phone-row">
+            <div class="cc-wrap">
+              <button class="cc-btn" id="cc-btn-login" type="button">
+                <span class="cc-flag" id="cc-flag-login">🇮🇳</span>
+                <span class="cc-dial" id="cc-dial-login">+91</span>
+                <span class="cc-arrow"></span>
+              </button>
+            </div>
+            <div class="phone-input-wrap">
+              <input type="tel" id="phone-number" placeholder="9876543210" inputmode="tel">
+            </div>
+          </div>
+        </div>
+        <button class="btn-primary" id="btn-send-code" onclick="sendCode()">Send OTP →</button>
+      </div>
+
+      <div id="step-otp" style="display:none">
+        <div class="otp-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#00d4ff"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          <span id="otp-hint">Code sent. Enter it below.</span>
+        </div>
+        <div class="field">
+          <label>Verification Code</label>
+          <input type="text" id="otp-code" placeholder="12345" maxlength="10" inputmode="numeric">
+        </div>
+        <div id="step-2fa" style="display:none">
+          <div class="field">
+            <label>2FA Password</label>
+            <input type="password" id="twofa-pass" placeholder="Two-step verification password">
+          </div>
+        </div>
+        <button class="btn-primary" id="btn-verify" onclick="verifyCode()">Verify & Login →</button>
+        <button class="btn-ghost" onclick="backToCreds()">← Back</button>
+      </div>
+    </div>
+
+    <div class="credit">
+      Built by <a href="https://t.me/anubhavanonymous" target="_blank">@anubhavanonymous</a> &nbsp;·&nbsp;
+      <a href="https://github.com/anubhavanonymous" target="_blank">GitHub</a>
+    </div>
+  </div>
+</div>
+
+<!-- ════ APP ════ -->
+<div class="screen" id="app-screen">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-logo">
+        <svg viewBox="0 0 24 24" fill="#00d4ff"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+      </div>
+      <div>
+        <div class="topbar-name">Tele-Trace</div>
+        <div class="topbar-tagline">by @anubhavanonymous</div>
+      </div>
+    </div>
+    <button class="btn-switch" onclick="confirmLogout()">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+      <span class="btn-switch-txt">Switch Account</span>
+    </button>
+  </div>
+
+  <div class="app-body">
+    <!-- Search -->
+    <div class="search-wrap">
+      <div class="search-label">// target lookup</div>
+
+      <!-- Toggle -->
+      <div class="search-toggle">
+        <button class="toggle-btn active" id="toggle-phone" onclick="setSearchMode('phone')">📞 Phone</button>
+        <button class="toggle-btn" id="toggle-username" onclick="setSearchMode('username')">@ Username</button>
+      </div>
+
+      <!-- Phone row -->
+      <div id="search-phone-row" class="search-row">
+        <div class="cc-wrap" id="cc-wrap-scan"></div>
+        <input class="search-input" type="tel" id="scan-phone" placeholder="9876543210" inputmode="tel"
+          onkeydown="if(event.key==='Enter')startScan()">
+        <button class="btn-search" id="btn-search" onclick="startScan()">
+          <span id="search-btn-txt">Search</span>
+        </button>
+      </div>
+
+      <!-- Username row -->
+      <div id="search-username-row" class="search-row" style="display:none">
+        <input class="search-input" type="text" id="scan-username" placeholder="username (without @)"
+          style="border-radius:9px"
+          onkeydown="if(event.key==='Enter')startScan()">
+        <button class="btn-search" id="btn-search-un" onclick="startScan()">
+          <span id="search-btn-txt-un">Search</span>
+        </button>
+      </div>
+
+      <div id="scan-alert" class="alert" style="margin-top:8px"></div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-card" id="loading-card">
+      <div class="loading-ring"></div>
+      <div class="loading-txt">// scanning target...</div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-card" id="result-card">
+
+      <!-- Scan meta -->
+      <div class="scan-meta">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        <span id="scan-meta-txt">—</span>
+      </div>
+
+      <!-- Export bar -->
+      <div class="export-bar">
+        <button class="btn-export" onclick="exportJSON()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>
+          Export JSON
+        </button>
+        <button class="btn-export" onclick="exportPDF()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/></svg>
+          Export PDF
+        </button>
+      </div>
+
+      <!-- Profile banner -->
+      <div class="profile-banner">
+        <div class="profile-top">
+          <div class="avatar-wrap">
+            <div class="avatar" id="res-avatar">?</div>
+            <div class="sdot" id="res-sdot"></div>
+          </div>
+          <div class="profile-info">
+            <div class="profile-name" id="res-name">—</div>
+            <div class="profile-uname" id="res-uname"></div>
+            <div class="profile-status" id="res-status"></div>
+            <div class="profile-bio" id="res-bio" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info tiles -->
+      <div class="info-grid">
+        <div class="info-tile"><div class="info-tile-lbl">User ID</div><div class="info-tile-val accent" id="res-uid">—</div></div>
+        <div class="info-tile"><div class="info-tile-lbl">Phone</div><div class="info-tile-val" id="res-phone">—</div></div>
+        <div class="info-tile"><div class="info-tile-lbl">Username</div><div class="info-tile-val accent" id="res-uname2">—</div></div>
+        <div class="info-tile"><div class="info-tile-lbl">Media</div><div class="info-tile-val green" id="res-media-count">—</div></div>
+      </div>
+
+      <!-- Account age -->
+      <div class="age-tile">
+        <div class="age-icon">
+          <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
+        </div>
+        <div class="age-info-text">
+          <div class="age-label">Account Age Estimate</div>
+          <div class="age-value" id="res-age-val">—</div>
+          <div class="age-range" id="res-age-range">—</div>
+        </div>
+      </div>
+
+      <!-- Trust Score -->
+      <div class="trust-tile">
+        <div class="trust-header">
+          <div class="trust-title">Trust Score</div>
+          <div class="trust-score-wrap">
+            <div class="trust-score" id="trust-score">—</div>
+            <div class="trust-level" id="trust-level"></div>
+          </div>
+        </div>
+        <div class="trust-bar-wrap">
+          <div class="trust-bar" id="trust-bar" style="width:0%"></div>
+        </div>
+        <div class="trust-checks" id="trust-checks"></div>
+      </div>
+
+      <!-- Flags -->
+      <div class="flags-tile">
+        <div class="flags-title">Account Flags</div>
+        <div class="flags-chips" id="res-flags"></div>
+      </div>
+
+      <!-- Username Intelligence -->
+      <div class="intel-tile" id="username-intel-tile" style="display:none">
+        <div class="intel-title">// Username Intelligence</div>
+        <div class="intel-rows" id="username-intel-rows"></div>
+      </div>
+
+      <!-- Bio Analysis -->
+      <div class="intel-tile" id="bio-intel-tile" style="display:none">
+        <div class="intel-title">// Bio Analysis</div>
+        <div class="intel-rows" id="bio-intel-rows"></div>
+      </div>
+
+      <!-- All Usernames -->
+      <div id="all-unames-tile" style="display:none">
+        <div style="margin-bottom:8px">
+          <div style="font-family:var(--mono);font-size:9.5px;font-weight:600;color:var(--sub2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">All Active Usernames</div>
+          <div class="unames-list" id="all-unames-list"></div>
+        </div>
+      </div>
+
+      <!-- Cross-Platform Search -->
+      <div class="platform-tile" id="platform-tile" style="display:none">
+        <div class="platform-title">
+          // Cross-Platform Search
+          <span class="platform-found-badge" id="platform-found-badge">0 found</span>
+        </div>
+        <div class="platform-grid" id="platform-grid"></div>
+      </div>
+
+      <!-- History -->
+      <div class="sangmata-tile">
+        <div class="sangmata-header">
+          <div class="sangmata-title">// Name &amp; Username History</div>
+        </div>
+        <div class="sangmata-body" id="sangmata-body">
+          <div class="sangmata-loading">
+            <div class="loading-ring" style="width:14px;height:14px;border-width:2px;margin:0;display:inline-block;flex-shrink:0"></div>
+            &nbsp;Fetching history…
+          </div>
+        </div>
+      </div>
+
+      <!-- Media -->
+      <div class="media-tile">
+        <div class="media-header">
+          <div class="media-title">
+            // Profile Media
+            <span class="media-badge" id="media-badge">0</span>
+          </div>
+        </div>
+        <div class="media-grid" id="media-grid"></div>
+        <div class="no-media" id="no-media" style="display:none">// no media found</div>
+      </div>
+
+    </div><!-- /result-card -->
+  </div><!-- /app-body -->
+</div><!-- /app-screen -->
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="lbOut(event)">
+  <button class="lb-close" onclick="closeLb()">✕</button>
+  <div id="lb-content"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="logout-modal">
+  <div class="modal-box">
+    <div class="modal-title">Switch Account?</div>
+    <div class="modal-text">Deletes saved session. You'll need to re-authenticate.</div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-danger" onclick="doLogout()">Delete Session</button>
+    </div>
+  </div>
+</div>
+
+<!-- Shared CC dropdown -->
+<div class="cc-dropdown" id="cc-dropdown">
+  <div class="cc-search-row">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="#6b8aaa"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    <input class="cc-search-inp" id="cc-search-inp" type="text" placeholder="Search country…" oninput="filterCC(this.value)" autocomplete="off">
+  </div>
+  <div class="cc-list" id="cc-list"></div>
+</div>
+
+<script>
+// ── COUNTRIES ──
+const CC=[
+  {n:"Afghanistan",d:"+93",f:"🇦🇫"},{n:"Albania",d:"+355",f:"🇦🇱"},{n:"Algeria",d:"+213",f:"🇩🇿"},
+  {n:"Argentina",d:"+54",f:"🇦🇷"},{n:"Armenia",d:"+374",f:"🇦🇲"},{n:"Australia",d:"+61",f:"🇦🇺"},
+  {n:"Austria",d:"+43",f:"🇦🇹"},{n:"Azerbaijan",d:"+994",f:"🇦🇿"},{n:"Bahrain",d:"+973",f:"🇧🇭"},
+  {n:"Bangladesh",d:"+880",f:"🇧🇩"},{n:"Belarus",d:"+375",f:"🇧🇾"},{n:"Belgium",d:"+32",f:"🇧🇪"},
+  {n:"Bolivia",d:"+591",f:"🇧🇴"},{n:"Bosnia",d:"+387",f:"🇧🇦"},{n:"Brazil",d:"+55",f:"🇧🇷"},
+  {n:"Bulgaria",d:"+359",f:"🇧🇬"},{n:"Cambodia",d:"+855",f:"🇰🇭"},{n:"Canada",d:"+1",f:"🇨🇦"},
+  {n:"Chile",d:"+56",f:"🇨🇱"},{n:"China",d:"+86",f:"🇨🇳"},{n:"Colombia",d:"+57",f:"🇨🇴"},
+  {n:"Croatia",d:"+385",f:"🇭🇷"},{n:"Cuba",d:"+53",f:"🇨🇺"},{n:"Czech Republic",d:"+420",f:"🇨🇿"},
+  {n:"Denmark",d:"+45",f:"🇩🇰"},{n:"Ecuador",d:"+593",f:"🇪🇨"},{n:"Egypt",d:"+20",f:"🇪🇬"},
+  {n:"Ethiopia",d:"+251",f:"🇪🇹"},{n:"Finland",d:"+358",f:"🇫🇮"},{n:"France",d:"+33",f:"🇫🇷"},
+  {n:"Georgia",d:"+995",f:"🇬🇪"},{n:"Germany",d:"+49",f:"🇩🇪"},{n:"Ghana",d:"+233",f:"🇬🇭"},
+  {n:"Greece",d:"+30",f:"🇬🇷"},{n:"Guatemala",d:"+502",f:"🇬🇹"},{n:"Hungary",d:"+36",f:"🇭🇺"},
+  {n:"India",d:"+91",f:"🇮🇳"},{n:"Indonesia",d:"+62",f:"🇮🇩"},{n:"Iran",d:"+98",f:"🇮🇷"},
+  {n:"Iraq",d:"+964",f:"🇮🇶"},{n:"Ireland",d:"+353",f:"🇮🇪"},{n:"Israel",d:"+972",f:"🇮🇱"},
+  {n:"Italy",d:"+39",f:"🇮🇹"},{n:"Japan",d:"+81",f:"🇯🇵"},{n:"Jordan",d:"+962",f:"🇯🇴"},
+  {n:"Kazakhstan",d:"+7",f:"🇰🇿"},{n:"Kenya",d:"+254",f:"🇰🇪"},{n:"Kuwait",d:"+965",f:"🇰🇼"},
+  {n:"Kyrgyzstan",d:"+996",f:"🇰🇬"},{n:"Lebanon",d:"+961",f:"🇱🇧"},{n:"Libya",d:"+218",f:"🇱🇾"},
+  {n:"Malaysia",d:"+60",f:"🇲🇾"},{n:"Mexico",d:"+52",f:"🇲🇽"},{n:"Moldova",d:"+373",f:"🇲🇩"},
+  {n:"Morocco",d:"+212",f:"🇲🇦"},{n:"Myanmar",d:"+95",f:"🇲🇲"},{n:"Nepal",d:"+977",f:"🇳🇵"},
+  {n:"Netherlands",d:"+31",f:"🇳🇱"},{n:"New Zealand",d:"+64",f:"🇳🇿"},{n:"Nigeria",d:"+234",f:"🇳🇬"},
+  {n:"Norway",d:"+47",f:"🇳🇴"},{n:"Oman",d:"+968",f:"🇴🇲"},{n:"Pakistan",d:"+92",f:"🇵🇰"},
+  {n:"Palestine",d:"+970",f:"🇵🇸"},{n:"Panama",d:"+507",f:"🇵🇦"},{n:"Peru",d:"+51",f:"🇵🇪"},
+  {n:"Philippines",d:"+63",f:"🇵🇭"},{n:"Poland",d:"+48",f:"🇵🇱"},{n:"Portugal",d:"+351",f:"🇵🇹"},
+  {n:"Qatar",d:"+974",f:"🇶🇦"},{n:"Romania",d:"+40",f:"🇷🇴"},{n:"Russia",d:"+7",f:"🇷🇺"},
+  {n:"Saudi Arabia",d:"+966",f:"🇸🇦"},{n:"Serbia",d:"+381",f:"🇷🇸"},{n:"Singapore",d:"+65",f:"🇸🇬"},
+  {n:"Slovakia",d:"+421",f:"🇸🇰"},{n:"Somalia",d:"+252",f:"🇸🇴"},{n:"South Africa",d:"+27",f:"🇿🇦"},
+  {n:"South Korea",d:"+82",f:"🇰🇷"},{n:"Spain",d:"+34",f:"🇪🇸"},{n:"Sri Lanka",d:"+94",f:"🇱🇰"},
+  {n:"Sudan",d:"+249",f:"🇸🇩"},{n:"Sweden",d:"+46",f:"🇸🇪"},{n:"Switzerland",d:"+41",f:"🇨🇭"},
+  {n:"Syria",d:"+963",f:"🇸🇾"},{n:"Taiwan",d:"+886",f:"🇹🇼"},{n:"Tajikistan",d:"+992",f:"🇹🇯"},
+  {n:"Tanzania",d:"+255",f:"🇹🇿"},{n:"Thailand",d:"+66",f:"🇹🇭"},{n:"Tunisia",d:"+216",f:"🇹🇳"},
+  {n:"Turkey",d:"+90",f:"🇹🇷"},{n:"Turkmenistan",d:"+993",f:"🇹🇲"},{n:"Uganda",d:"+256",f:"🇺🇬"},
+  {n:"Ukraine",d:"+380",f:"🇺🇦"},{n:"United Arab Emirates",d:"+971",f:"🇦🇪"},
+  {n:"United Kingdom",d:"+44",f:"🇬🇧"},{n:"United States",d:"+1",f:"🇺🇸"},
+  {n:"Uzbekistan",d:"+998",f:"🇺🇿"},{n:"Venezuela",d:"+58",f:"🇻🇪"},{n:"Vietnam",d:"+84",f:"🇻🇳"},
+  {n:"Yemen",d:"+967",f:"🇾🇪"},{n:"Zimbabwe",d:"+263",f:"🇿🇼"},
+];
+
+const pickers={login:{dial:"+91",flag:"🇮🇳"},scan:{dial:"+91",flag:"🇮🇳"}};
+let activePicker=null,ccOpen=false;
+
+function buildCC(q=""){
+  const lo=q.toLowerCase();
+  const items=CC.filter(c=>!q||c.n.toLowerCase().includes(lo)||c.d.includes(q));
+  document.getElementById("cc-list").innerHTML=items.map(c=>
+    `<div class="cc-item" onclick="pickCC('${c.d}','${c.f}')">
+      <span class="cc-item-flag">${c.f}</span>
+      <span class="cc-item-name">${c.n}</span>
+      <span class="cc-item-dial">${c.d}</span>
+    </div>`).join("");
+}
+function filterCC(v){buildCC(v);}
+
+function openCC(id,triggerEl){
+  if(ccOpen&&activePicker===id){closeCC();return;}
+  activePicker=id;ccOpen=true;
+  const dd=document.getElementById("cc-dropdown");
+  const r=triggerEl.getBoundingClientRect();
+  const w=Math.max(270,r.width+180);
+  dd.style.width=w+"px";
+  let left=r.left;
+  if(left+w>window.innerWidth-8)left=window.innerWidth-w-8;
+  dd.style.left=Math.max(8,left)+"px";
+  const spBelow=window.innerHeight-r.bottom-8;
+  if(spBelow>=260||spBelow>window.innerHeight-r.top){
+    dd.style.top=(r.bottom+4)+"px";dd.style.bottom="auto";
+  } else {
+    dd.style.bottom=(window.innerHeight-r.top+4)+"px";dd.style.top="auto";
+  }
+  document.getElementById("cc-search-inp").value="";
+  buildCC();dd.classList.add("open");
+  document.querySelectorAll(".cc-btn").forEach(b=>b.classList.remove("open"));
+  triggerEl.classList.add("open");
+  setTimeout(()=>document.getElementById("cc-search-inp").focus(),50);
+}
+function closeCC(){
+  ccOpen=false;activePicker=null;
+  document.getElementById("cc-dropdown").classList.remove("open");
+  document.querySelectorAll(".cc-btn").forEach(b=>b.classList.remove("open"));
+}
+function pickCC(dial,flag){
+  pickers[activePicker]={dial,flag};
+  updatePickerBtn(activePicker);closeCC();
+}
+function updatePickerBtn(id){
+  const p=pickers[id];
+  if(id==="login"){
+    document.getElementById("cc-flag-login").textContent=p.flag;
+    document.getElementById("cc-dial-login").textContent=p.dial;
+  } else {
+    const btn=document.getElementById("cc-btn-scan");
+    if(btn){btn.querySelector(".cc-flag").textContent=p.flag;btn.querySelector(".cc-dial").textContent=p.dial;}
+  }
+}
+function buildScanPicker(){
+  const wrap=document.getElementById("cc-wrap-scan");
+  wrap.innerHTML=`<button class="cc-btn" id="cc-btn-scan" type="button">
+    <span class="cc-flag">${pickers.scan.flag}</span>
+    <span class="cc-dial">${pickers.scan.dial}</span>
+    <span class="cc-arrow"></span>
+  </button>`;
+  document.getElementById("cc-btn-scan").addEventListener("click",function(e){
+    e.stopPropagation();openCC("scan",this);
+  });
+}
+document.getElementById("cc-btn-login").addEventListener("click",function(e){
+  e.stopPropagation();openCC("login",this);
+});
+document.addEventListener("click",e=>{
+  if(!e.target.closest("#cc-dropdown")&&!e.target.closest(".cc-btn"))closeCC();
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){closeCC();closeLb();closeModal();}
+});
+
+// Auto detect
+(()=>{
+  const m={IN:"+91",US:"+1",GB:"+44",PK:"+92",BD:"+880",NG:"+234",BR:"+55",DE:"+49",FR:"+33",AU:"+61",CA:"+1",RU:"+7",TR:"+90",EG:"+20",SA:"+966",AE:"+971",ID:"+62",PH:"+63",VN:"+84",TH:"+66"};
+  try{
+    const r=(navigator.language||"").split("-")[1]||"";
+    const d=m[r];if(!d)return;
+    const c=CC.find(x=>x.d===d);if(!c)return;
+    pickers.login={dial:c.d,flag:c.f};pickers.scan={dial:c.d,flag:c.f};
+    document.getElementById("cc-flag-login").textContent=c.f;
+    document.getElementById("cc-dial-login").textContent=c.d;
+  }catch(e){}
+})();
+
+// ── INIT ──
+async function init(){
+  buildCC();buildScanPicker();
+  try{
+    const r=await fetch("/api/status");
+    const d=await r.json();
+    if(d.status==="authorized")showApp();else showLogin();
+  }catch(e){showLogin();}
+}
+function showLogin(){document.getElementById("login-screen").classList.add("active");document.getElementById("app-screen").classList.remove("active");}
+function showApp(){document.getElementById("login-screen").classList.remove("active");document.getElementById("app-screen").classList.add("active");}
+function showAlert(msg,type,id="alert-box"){const e=document.getElementById(id);e.textContent=msg;e.className="alert "+type+" show";}
+function hideAlert(id="alert-box"){document.getElementById(id).className="alert";}
+
+// ── SEND CODE ──
+async function sendCode(){
+  hideAlert();
+  const apiId=document.getElementById("api-id").value.trim();
+  const apiHash=document.getElementById("api-hash").value.trim();
+  const raw=document.getElementById("phone-number").value.trim().replace(/^0+/,"");
+  const phone=pickers.login.dial+raw;
+  if(!apiId||!apiHash||!raw){showAlert("Fill in all fields.","error");return;}
+  const btn=document.getElementById("btn-send-code");
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Sending…';
+  try{
+    const r=await fetch("/api/send_code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({api_id:apiId,api_hash:apiHash,phone})});
+    const d=await r.json();
+    if(d.error){showAlert(d.error,"error");btn.disabled=false;btn.innerHTML="Send OTP →";return;}
+    document.getElementById("otp-hint").textContent="Code sent to "+phone;
+    document.getElementById("step-creds").style.display="none";
+    document.getElementById("step-otp").style.display="block";
+    hideAlert();
+    setTimeout(()=>document.getElementById("otp-code").focus(),80);
+  }catch(e){showAlert("Connection error.","error");btn.disabled=false;btn.innerHTML="Send OTP →";}
+}
+
+// ── VERIFY ──
+async function verifyCode(){
+  hideAlert();
+  const code=document.getElementById("otp-code").value.trim();
+  const password=document.getElementById("twofa-pass").value||null;
+  if(!code){showAlert("Enter verification code.","error");return;}
+  const btn=document.getElementById("btn-verify");
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Verifying…';
+  try{
+    const r=await fetch("/api/verify_code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,password})});
+    const d=await r.json();
+    if(d.error==="2fa_required"){document.getElementById("step-2fa").style.display="block";showAlert("2FA required. Enter password.","error");btn.disabled=false;btn.innerHTML="Verify & Login →";return;}
+    if(d.error){showAlert(d.error,"error");btn.disabled=false;btn.innerHTML="Verify & Login →";return;}
+    showAlert("Welcome, "+d.name+"!","success");
+    setTimeout(()=>showApp(),600);
+  }catch(e){showAlert("Connection error.","error");btn.disabled=false;btn.innerHTML="Verify & Login →";}
+}
+function backToCreds(){
+  document.getElementById("step-creds").style.display="block";
+  document.getElementById("step-otp").style.display="none";
+  document.getElementById("btn-send-code").disabled=false;
+  document.getElementById("btn-send-code").innerHTML="Send OTP →";
+  hideAlert();
+}
+
+// ── SCAN ──
+let _currentData = null;
+let _searchMode = "phone"; // "phone" or "username"
+
+function setSearchMode(mode){
+  _searchMode = mode;
+  document.getElementById("toggle-phone").classList.toggle("active", mode==="phone");
+  document.getElementById("toggle-username").classList.toggle("active", mode==="username");
+  document.getElementById("search-phone-row").style.display = mode==="phone" ? "flex" : "none";
+  document.getElementById("search-username-row").style.display = mode==="username" ? "flex" : "none";
+}
+
+async function startScan(){
+  hideAlert("scan-alert");
+  _currentData = null;
+
+  let body = {};
+  let activeBtnId, activeTxtId;
+
+  if(_searchMode === "phone"){
+    const raw = document.getElementById("scan-phone").value.trim();
+    if(!raw){showAlert("Enter a phone number.","error","scan-alert");return;}
+    body.phone = raw.startsWith("+") ? raw : (pickers.scan.dial + raw.replace(/^0+/,""));
+    activeBtnId = "btn-search"; activeTxtId = "search-btn-txt";
+  } else {
+    const un = document.getElementById("scan-username").value.trim().replace(/^@/,"");
+    if(!un){showAlert("Enter a username.","error","scan-alert");return;}
+    body.username = un;
+    activeBtnId = "btn-search-un"; activeTxtId = "search-btn-txt-un";
+  }
+
+  const btn = document.getElementById(activeBtnId);
+  btn.disabled = true;
+  document.getElementById(activeTxtId).innerHTML='<span class="spinner"></span>';
+  document.getElementById("result-card").classList.remove("show");
+  document.getElementById("loading-card").classList.add("show");
+  document.getElementById("sangmata-body").innerHTML='<div class="sangmata-loading"><div class="loading-ring" style="width:14px;height:14px;border-width:2px;margin:0;display:inline-block"></div>&nbsp;Fetching history…</div>';
+
+  try{
+    const r=await fetch("/api/scan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const d=await r.json();
+    document.getElementById("loading-card").classList.remove("show");
+    btn.disabled=false;
+    document.getElementById(activeTxtId).textContent="Search";
+    if(d.error){showAlert(d.error,"error","scan-alert");return;}
+    hideAlert("scan-alert");
+    _currentData=d;
+    renderResult(d);
+  }catch(e){
+    document.getElementById("loading-card").classList.remove("show");
+    btn.disabled=false;
+    document.getElementById(activeTxtId).textContent="Search";
+    console.error("Scan catch error:", e);
+    // Only show error if results haven't already loaded
+    if(!_currentData) showAlert("Scan failed: " + e.message,"error","scan-alert");
+  }
+}
+
+// ── HISTORY RENDER ──
+function renderHistory(d){
+  const body=document.getElementById("sangmata-body");
+  if(!d){body.innerHTML='<span class="sm-empty">— not fetched —</span>';return;}
+
+  // Quota exceeded
+  if(d.error==="quota_exceeded"){
+    const resetIn=d.quota_error?` Resets in: <b>${esc(d.quota_error)}</b>`:"";
+    body.innerHTML=`<div style="background:rgba(255,204,0,.08);border:1px solid rgba(255,204,0,.2);border-radius:8px;padding:10px 13px;">
+      <div style="color:var(--yellow);font-family:var(--mono);font-size:11px;font-weight:700;margin-bottom:4px;">⚠ Daily Quota Exceeded</div>
+      <div style="color:var(--sub);font-size:12px;line-height:1.6;">History lookup limit reached for today.${resetIn}</div>
+    </div>`;
+    return;
+  }
+
+  if(d.error&&!d.names?.length&&!d.usernames?.length){
+    body.innerHTML=`<span class="sm-empty">⚠ ${esc(d.error)}</span>`;return;
+  }
+
+  let html="";
+  if(d.names&&d.names.length){
+    html+='<div class="sm-section"><div class="sm-section-title">Names</div>';
+    d.names.forEach(n=>{html+=`<div class="sm-row"><span class="sm-date">${esc(n.date)}</span><span class="sm-val">${esc(n.value)}</span></div>`;});
+    html+="</div>";
+  }
+  if(d.usernames&&d.usernames.length){
+    html+='<div class="sm-section"><div class="sm-section-title">Usernames</div>';
+    d.usernames.forEach(u=>{html+=`<div class="sm-row"><span class="sm-date">${esc(u.date)}</span><span class="sm-val">${esc(u.value)}</span></div>`;});
+    html+="</div>";
+  }
+  if(!html)html='<span class="sm-empty">No history recorded</span>';
+  body.innerHTML=html;
+}
+
+// ── MEDIA ──
+let _media=[],_urls=[];
+function revokeUrls(){_urls.forEach(u=>{try{URL.revokeObjectURL(u);}catch(e){}});_urls=[];}
+
+function detectMime(b64){
+  try{
+    const padded=(b64.slice(0,20).replace(/[^A-Za-z0-9+/]/g,"")+"====").slice(0,20);
+    const s=atob(padded);const c=i=>s.charCodeAt(i);
+    if(c(0)===0xFF&&c(1)===0xD8)return"image/jpeg";
+    if(c(0)===0x89&&c(1)===0x50&&c(2)===0x4E&&c(3)===0x47)return"image/png";
+    if(c(0)===0x47&&c(1)===0x49&&c(2)===0x46)return"image/gif";
+    if(c(0)===0x52&&c(1)===0x49&&c(2)===0x46&&c(3)===0x46&&s.length>=12&&s.slice(8,12)==="WEBP")return"image/webp";
+    if(c(0)===0x00&&c(1)===0x00&&c(2)===0x00)return"video/mp4";
+    if(c(0)===0x1A&&c(1)===0x45)return"video/webm";
+  }catch(e){}
+  return null;
+}
+function b64ToDataUrl(b64,hintMime){
+  const mime=detectMime(b64)||hintMime||"image/jpeg";
+  return{url:"data:"+mime+";base64,"+b64.replace(/\s/g,""),mime};
+}
+function b64ToBlobUrl(b64,mime){
+  try{
+    const bin=atob(b64.replace(/\s/g,""));
+    const arr=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    const blob=new Blob([arr],{type:mime});
+    const u=URL.createObjectURL(blob);_urls.push(u);return u;
+  }catch(e){return null;}
+}
+function b64ToUrl(b64,mime){
+  const detected=detectMime(b64)||mime||"image/jpeg";
+  if(detected.startsWith("video/")){
+    const u=b64ToBlobUrl(b64,detected);
+    return u?{url:u,mime:detected}:null;
+  }
+  return b64ToDataUrl(b64,detected);
+}
+function b64ToCanvasUrl(b64,hintMime,cb){
+  const{url,mime}=b64ToDataUrl(b64,hintMime);
+  const img=new Image();
+  img.onload=function(){
+    try{
+      const cv=document.createElement("canvas");cv.width=img.naturalWidth||img.width;cv.height=img.naturalHeight||img.height;
+      cv.getContext("2d").drawImage(img,0,0);cb(cv.toDataURL("image/jpeg",.92));
+    }catch(e){cb(url);}
+  };
+  img.onerror=()=>cb(url);img.src=url;
+}
+
+// ── RENDER ──
+function renderResult(d){
+  revokeUrls();_media=d.media||[];
+
+  // Avatar
+  const av=document.getElementById("res-avatar");av.innerHTML="";
+  const firstVid=_media.find(m=>m.type==="video");
+  const firstPic=_media.find(m=>m.type==="photo");
+  const avatarItem=firstVid||firstPic;
+  if(avatarItem){
+    const r=b64ToUrl(avatarItem.data,avatarItem.mime);
+    if(r){
+      const el=document.createElement(avatarItem.type==="video"?"video":"img");
+      el.style.cssText="width:100%;height:100%;object-fit:cover;";
+      if(avatarItem.type==="video"){el.setAttribute("autoplay","");el.setAttribute("loop","");el.setAttribute("muted","");el.setAttribute("playsinline","");el.muted=true;el.src=r.url;el.load();}
+      else{el.src=r.url;}
+      el.onerror=()=>{av.innerHTML=initials(d.name);};
+      av.appendChild(el);
+    } else {av.innerHTML=initials(d.name);}
+  } else {av.innerHTML=initials(d.name);}
+
+  document.getElementById("res-sdot").className="sdot "+(d.status_class||"hidden");
+
+  // Name + badges
+  let nameHtml=esc(d.name||"Unknown");
+  if(d.flags){
+    if(d.flags.is_premium)nameHtml+=' <span class="badge badge-premium">★ Premium</span>';
+    if(d.flags.is_verified)nameHtml+=' <span class="badge badge-verified">✓ Verified</span>';
+    if(d.flags.is_bot)nameHtml+=' <span class="badge badge-bot">BOT</span>';
+    if(d.flags.is_scam)nameHtml+=' <span class="badge badge-scam">⚠ SCAM</span>';
+    if(d.flags.is_fake)nameHtml+=' <span class="badge badge-fake">⚠ FAKE</span>';
+  }
+  document.getElementById("res-name").innerHTML=nameHtml;
+  document.getElementById("res-uname").textContent=d.username&&d.username!=="No username"?"@"+d.username:"No username set";
+  const st=document.getElementById("res-status");
+  st.textContent=d.status||"—";st.className="profile-status "+(d.status_class||"");
+  const bioEl=document.getElementById("res-bio");
+  if(d.bio&&d.bio!=="Not visible"){bioEl.textContent=d.bio;bioEl.style.display="block";}
+  else{bioEl.style.display="none";}
+
+  // Tiles
+  document.getElementById("res-uid").textContent=d.user_id||"—";
+  document.getElementById("res-phone").textContent=d.phone||"—";
+  document.getElementById("res-uname2").textContent=d.username||"—";
+  document.getElementById("res-media-count").textContent=_media.length+" files";
+
+  // Scan meta
+  document.getElementById("scan-meta-txt").textContent="Scanned: "+d.scan_time;
+
+  // Age
+  if(d.age_info){
+    document.getElementById("res-age-val").textContent=d.age_info.age;
+    document.getElementById("res-age-range").textContent="Created approx. "+d.age_info.range;
+  }
+
+  // Flags
+  const fd=[{k:"is_bot",l:"Bot"},{k:"is_fake",l:"Fake"},{k:"is_scam",l:"Scam"},{k:"is_premium",l:"Premium"},{k:"is_verified",l:"Verified"}];
+  document.getElementById("res-flags").innerHTML=d.flags?fd.map(f=>`<span class="fchip ${d.flags[f.k]?"on":"off"}"><span class="fdot"></span>${f.l}: ${d.flags[f.k]?"Yes":"No"}</span>`).join(""):"";
+
+  // Media
+  const grid=document.getElementById("media-grid");
+  grid.innerHTML="";
+  document.getElementById("media-badge").textContent=_media.length;
+  document.getElementById("no-media").style.display=_media.length?"none":"block";
+
+  _media.forEach((item,i)=>{
+    const isVideo=item.type==="video";
+    const mime=item.mime||(isVideo?"video/mp4":"image/jpeg");
+    const r=b64ToUrl(item.data,mime);
+    const ext=isVideo?"mp4":"jpg";
+
+    const box=document.createElement("div");box.className="media-box";
+    const tw=document.createElement("div");tw.className="media-thumb-wrap";tw.onclick=()=>openLb(i);
+
+    if(r){
+      const el=document.createElement(isVideo?"video":"img");
+      el.style.cssText="width:100%;height:100%;object-fit:cover;display:block;";
+      if(isVideo){
+        el.setAttribute("autoplay","");el.setAttribute("loop","");el.setAttribute("muted","");
+        el.setAttribute("playsinline","");el.muted=true;
+        const play=document.createElement("div");play.className="vid-play";
+        play.innerHTML=`<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+        tw.appendChild(play);
+        el.onerror=()=>{tw.innerHTML=brokenHTML("Video DP");};
+        el.src=r.url;el.load();
+      } else {
+        el.onerror=()=>{
+          if(r.mime==="image/webp"){
+            b64ToCanvasUrl(item.data,item.mime,fu=>{el.onerror=()=>{tw.innerHTML=brokenHTML("Photo");};el.src=fu;});
+          } else {tw.innerHTML=brokenHTML("Photo");}
+        };
+        el.src=r.url;
+      }
+      tw.insertBefore(el,tw.firstChild);
+    } else {tw.innerHTML=brokenHTML(isVideo?"Video":"Photo");}
+    box.appendChild(tw);
+
+    const foot=document.createElement("div");foot.className="media-foot";
+    foot.innerHTML=`
+      <span class="media-type-lbl ${isVideo?"video":""}">
+        ${isVideo?`<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg> Video DP`
+                 :`<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg> Photo`}
+      </span>
+      <a class="btn-dl" href="${r?r.url:"#"}" download="tt_dp_${i+1}.${ext}" ${!r?"onclick='return false'":""}>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>Save
+      </a>`;
+    // Date label
+    if(item.date){
+      const dateEl = document.createElement("div");
+      dateEl.className = "media-date";
+      dateEl.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>${esc(item.date)}`;
+      box.appendChild(dateEl);
+    }
+    box.appendChild(foot);
+
+    // Reverse image search bar (photos only)
+    if(!isVideo && r){
+      const risBar=document.createElement("div");
+      risBar.className="ris-bar";
+      risBar.innerHTML=`
+        <div class="ris-label">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          Reverse Image Search
+        </div>
+        <div class="ris-btns">
+          <button class="btn-ris google" id="ris-google-${i}" onclick="risSearch(${i},'google')">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27 3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10 5.35 0 9.25-3.67 9.25-9.09 0-1.15-.15-1.81-.15-1.81z"/></svg>
+            Google Lens
+          </button>
+          <button class="btn-ris yandex" id="ris-yandex-${i}" onclick="risSearch(${i},'yandex')">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            Yandex
+          </button>
+        </div>
+        <div class="ris-status" id="ris-status-${i}"></div>`;
+      box.appendChild(risBar);
+    }
+    grid.appendChild(box);
+  });
+
+  // Trust score
+  renderConfidence(d);
+
+  // Username intelligence
+  renderUsernameIntel(d.username, d.name);
+
+  // Bio analysis
+  renderBioIntel(d.bio);
+
+  // All usernames
+  renderAllUsernames(d);
+
+  // Cross-platform username scan (auto-run)
+  const scanUsername = d.username && d.username !== "No username" ? d.username : null;
+  if(scanUsername) runPlatformScan(scanUsername);
+  else document.getElementById("platform-tile").style.display="none";
+
+  // Render history (auto-fetched during scan)
+  renderHistory(d.history||null);
+
+  document.getElementById("result-card").classList.add("show");
+  document.getElementById("result-card").scrollIntoView({behavior:"smooth",block:"start"});
+
+  // Pre-upload photos in background for instant reverse image search
+  setTimeout(preloadRisCache, 1500);
+}
+
+function brokenHTML(label){
+  return`<div class="broken-img"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg><span>${label}</span></div>`;
+}
+
+// ── TRUST SCORE ──
+function calcTrust(d){
+  let score = 0;
+  const checks = [];
+
+  function chk(condition, passText, failText, pts, warnCondition){
+    const status = d.flags?.is_scam || d.flags?.is_fake ? "fail"
+                 : condition ? "pass" : warnCondition ? "warn" : "fail";
+    if(condition) score += pts;
+    checks.push({
+      pass: condition,
+      warn: warnCondition && !condition,
+      text: condition ? passText : failText,
+      pts
+    });
+  }
+
+  // Username looks like a real name (has letters, no excessive numbers/symbols)
+  const un = d.username || "";
+  const unLooksReal = un.length > 2 && /^[a-zA-Z]/.test(un) && !/^\w{1,4}\d{4,}$/.test(un) && un !== "No username";
+  chk(unLooksReal, "Username appears to be a real name", "Username looks auto-generated or absent", 12);
+
+  // Has bio
+  const hasBio = d.bio && d.bio !== "Not visible" && d.bio.length > 3;
+  chk(hasBio, "Bio is present", "No bio set", 10);
+
+  // Multiple photos
+  const photoCount = (d.media||[]).filter(m=>m.type==="photo").length;
+  const videoCount = (d.media||[]).filter(m=>m.type==="video").length;
+  chk(photoCount >= 2 || videoCount >= 1, "Multiple profile photos", photoCount===1?"Only 1 profile photo":"No profile photos", 15);
+
+  // Account age > 3 years (user ID based)
+  const uid = parseInt(d.user_id);
+  const isOld = uid < 2000000000; // roughly pre-2022
+  const isVeryOld = uid < 1200000000; // roughly pre-2020
+  chk(isOld, isVeryOld ? "Account age > 5 years" : "Account age > 3 years", "Account created recently", 15);
+
+  // Status visible
+  const statusVisible = ["online","recently","offline","week","month"].includes(d.status_class);
+  chk(statusVisible, "Last seen status is visible", "Last seen is hidden", 8);
+
+  // Has name history (proves real usage over time)
+  const hasHistory = (d.history?.names?.length > 0) || (d.history?.usernames?.length > 0);
+  chk(hasHistory, "Has name/username history", "No activity history found", 10);
+
+  // Premium or verified
+  chk(d.flags?.is_premium || d.flags?.is_verified,
+      d.flags?.is_verified ? "Account is verified" : "Telegram Premium subscriber",
+      "Not premium or verified", 8);
+
+  // Not flagged
+  const clean = !d.flags?.is_scam && !d.flags?.is_fake && !d.flags?.is_bot;
+  chk(clean, "No scam/fake/bot flags", d.flags?.is_scam ? "⚠ Marked as SCAM" : d.flags?.is_fake ? "⚠ Marked as FAKE" : "Flagged as bot", 20);
+  if(!clean) score = Math.max(0, score - 30); // hard penalty
+
+  // Platform presence bonus
+  const platforms = d._platformResults;
+  if(platforms){
+    const foundCount = platforms.found_count || 0;
+    if(foundCount >= 3){
+      score += 10; checks.push({pass:true, warn:false, text:`Found on ${foundCount} external platforms`});
+    } else if(foundCount >= 1){
+      score += 5; checks.push({pass:true, warn:false, text:`Found on ${foundCount} external platform${foundCount>1?"s":""}`});
+    } else {
+      checks.push({pass:false, warn:true, text:"Not found on any external platform"});
+    }
+  }
+
+  score = Math.max(0, Math.min(100, score));
+  const level = score >= 70 ? "high" : score >= 40 ? "medium" : "low";
+  const levelLabel = score >= 70 ? "HIGH" : score >= 40 ? "MEDIUM" : "LOW";
+  return {score, level, levelLabel, checks};
+}
+
+function renderConfidence(d){
+  const {score, level, levelLabel, checks} = calcTrust(d);
+
+  const scoreEl = document.getElementById("trust-score");
+  const levelEl = document.getElementById("trust-level");
+  const barEl   = document.getElementById("trust-bar");
+  const chkEl   = document.getElementById("trust-checks");
+
+  scoreEl.textContent = score + "%";
+  scoreEl.className   = "trust-score " + level;
+  levelEl.textContent = levelLabel;
+  levelEl.className   = "trust-level " + level;
+  barEl.className     = "trust-bar " + level;
+  barEl.style.width   = "0%";
+  setTimeout(()=>{ barEl.style.width = score + "%"; }, 120);
+
+  chkEl.innerHTML = checks.map(c => {
+    const icon  = c.pass ? "✓" : c.warn ? "~" : "✗";
+    const cls   = c.pass ? "pass" : c.warn ? "warn" : "fail";
+    return `<div class="tcheck">
+      <div class="tcheck-icon ${cls}">${icon}</div>
+      <div class="tcheck-txt ${c.pass?"pass":""}">${esc(c.text)}</div>
+    </div>`;
+  }).join("");
+}
+
+// ── USERNAME INTELLIGENCE ──
+function analyzeUsername(username){
+  if(!username || username === "No username") return null;
+  const un = username.replace(/^@/, "");
+  const result = {};
+
+  // Pattern detection
+  const patterns = [
+    {re:/^[a-z]+[_\.][a-z]+$/i,             label:"name_surname"},
+    {re:/^[a-z]+[_\.][a-z]+[_\.][a-z]+$/i, label:"name_mid_surname"},
+    {re:/^[a-z]+\d{2,4}$/i,                 label:"name + numbers"},
+    {re:/^[a-z]+[_\.]\d{2,4}$/i,           label:"name_year"},
+    {re:/^[A-Z][a-z]+[A-Z][a-z]+/,           label:"CamelCase name"},
+    {re:/^(xX|Xx|xx|XX).+/,                  label:"gaming style"},
+    {re:/^[a-z0-9]{4,8}$/,                   label:"short handle"},
+    {re:/^[a-z]+_?(official|real|iam|its|the)/i, label:"name_official style"},
+    {re:/^[^a-zA-Z]/,                         label:"starts with number/symbol"},
+  ];
+  for(const p of patterns){
+    if(p.re.test(un)){ result.pattern = p.label; break; }
+  }
+  if(!result.pattern) result.pattern = "custom / unique";
+
+  // Nickname vs real name detection
+  const nicknameWords = ["shadow","ghost","king","queen","hunter","wolf","dark","night","void","storm","blade","fire","ice","neo","zero","phantom","viper","reaper","ninja","hacker","cyber","digital","unknown","anonymous","secret","hidden","elite","pro","master","lord","god","devil","angel","dragon","skull","death","silent","savage","beast","legend","myth"];
+  const lun = un.toLowerCase();
+  const unParts = lun.split(/[_\.\-\d]+/);
+  result.isNickname = nicknameWords.some(w => unParts.includes(w) || lun.includes(w));
+  result.nameType = result.isNickname ? "Nickname / Handle" : "Likely real name";
+
+  // Possible name extraction
+  const parts = un.split(/[_\.\-]/).filter(p => /^[a-zA-Z]{2,}$/.test(p));
+  const nonGeneric = parts.filter(p => !["its","the","real","official","iam","not","just","only","mr","ms","sir","bot","page","news","official"].includes(p.toLowerCase()));
+  result.possibleName = nonGeneric.length >= 1
+    ? nonGeneric.map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(" ")
+    : null;
+
+  // Birth year detection (extended range)
+  const yearMatch = un.match(/(?:19[7-9]\d|200[0-9]|201[0-9]|202[0-2])/);
+  result.birthYear = yearMatch ? yearMatch[0] : null;
+
+  // Region + name origin (expanded)
+  const nameOrigins = {
+    "Indian":       ["kumar","singh","sharma","verma","gupta","rao","navin","ram","raj","dev","arjun","rohit","amit","suresh","ganesh","ravi","shiv","anand","priya","anjali","deepak","vikas","rahul","sanjay","anil","suryavanshi","mishra","pandey","yadav","chauhan","pathak","tiwari","dubey","joshi","nair","pillai","reddy","iyer","menon","aditya","kartik","nikhil","vikram","pooja","neha","divya","sneha","rohan","karan","aryan","ayaan","ishaan"],
+    "Arabic/Muslim":["ali","omar","hassan","ahmed","khan","malik","ibrahim","mustafa","rahman","sayed","hussain","wahid","talib","samir","fadel","zaid","yusuf","umar","bilal","hamza","tariq","faiz","raza","nawaz","asif","imran","shahid","aamir","adnan","faisal","salman","danish"],
+    "Russian/Slavic":["ivan","sergei","alexei","dmitri","mikhail","nikolai","andrei","vladimir","boris","igor","yuri","natasha","olga","elena","viktor","pyotr","vasily","alexey","artem","maxim","nikita"],
+    "Western":      ["john","mike","chris","alex","james","david","ryan","daniel","matthew","kevin","jason","josh","adam","ben","tom","sam","nick","robert","william","richard","joseph","charles","mark","paul","george","steven","brian","gary","larry","eric","andrew","jonathan"],
+    "Chinese/Korean":["wei","ming","lei","chen","wang","zhang","liu","yang","li","wu","zhao","xiao","jun","han","young","kim","lee","park","choi","jung","kang","cho"],
+  };
+
+  let region = "Unknown";
+  let nameOrigin = "Unknown";
+  for(const [origin, roots] of Object.entries(nameOrigins)){
+    for(const p of unParts){
+      if(roots.some(r => p === r || (p.length > 3 && (p.includes(r) || r.includes(p))))){
+        nameOrigin = origin;
+        region = origin === "Indian" ? "India"
+               : origin === "Arabic/Muslim" ? "Middle East / South Asia"
+               : origin === "Russian/Slavic" ? "Russia / Eastern Europe"
+               : origin === "Western" ? "Western / English speaking"
+               : origin === "Chinese/Korean" ? "East Asia"
+               : "Unknown";
+        break;
+      }
+    }
+    if(region !== "Unknown") break;
+  }
+  result.region = region;
+  result.nameOrigin = nameOrigin;
+
+  // Name meaning lookup (common names)
+  const nameMeanings = {
+    "aditya":"Sun / First","arjun":"Bright / Shining","rahul":"Efficient / Conqueror of miseries",
+    "rohan":"Ascending","vikram":"Brave / Valor","anand":"Bliss / Happiness",
+    "priya":"Beloved","deepak":"Lamp / Light","ravi":"Sun","shiv":"Auspicious",
+    "ali":"High / Exalted","omar":"Flourishing","hassan":"Handsome","ahmed":"Praiseworthy",
+    "ibrahim":"Father of nations","mustafa":"Chosen one","zaid":"Growth / Abundance",
+    "alex":"Defender of men","david":"Beloved","james":"Supplanter","john":"God is gracious",
+    "ryan":"Little king","daniel":"God is my judge","adam":"Earth / Man","ivan":"God is gracious",
+    "viktor":"Victor / Winner","maxim":"Greatest","wei":"Mighty / Valuable","jun":"Talented",
+    "anubhav":"Experience / Knowledge","kartik":"One who bestows courage",
+    "nikhil":"Complete / Whole","ayaan":"Gift of God","ishaan":"Sun / Lord Shiva",
+  };
+  const firstPart = unParts[0] || "";
+  result.nameMeaning = nameMeanings[firstPart] || null;
+
+  // Name consistency with display name (set later by renderUsernameIntel)
+  result._rawParts = unParts;
+
+  // Entropy
+  const charSet = new Set(un.toLowerCase()).size;
+  const hasUpper = /[A-Z]/.test(un);
+  const hasNum   = /\d/.test(un);
+  const hasSpec  = /[_\.\-]/.test(un);
+  const variety  = (hasUpper?1:0)+(hasNum?1:0)+(hasSpec?1:0);
+  result.entropy = charSet <= 5 ? "Very Low" : charSet <= 8 ? "Low" : charSet <= 12 ? "Medium" : variety >= 2 ? "High" : "Medium";
+
+  return result;
+}
+
+function renderUsernameIntel(username, displayName){
+  const data = analyzeUsername(username);
+  const tile = document.getElementById("username-intel-tile");
+  const rows = document.getElementById("username-intel-rows");
+  if(!data){ tile.style.display="none"; return; }
+  tile.style.display="block";
+
+  // Name consistency score (compare username parts vs display name parts)
+  let consistencyHtml = "";
+  if(displayName && displayName !== "—" && data._rawParts){
+    const nameParts = displayName.toLowerCase().replace(/[^a-z\s]/g,"").split(/\s+/).filter(p=>p.length>2);
+    const matches = data._rawParts.filter(p => nameParts.some(n => n.includes(p) || p.includes(n)));
+    const score = nameParts.length > 0 ? Math.round((matches.length / nameParts.length) * 100) : 0;
+    const scoreColor = score >= 70 ? "green" : score >= 40 ? "yellow" : "red";
+    consistencyHtml = `<div class="intel-row"><span class="intel-lbl">Name Match</span><span class="intel-val"><span class="intel-tag ${scoreColor}">${score}% consistent</span></span></div>`;
+  }
+
+  const entropyColor = {"Very Low":"red","Low":"yellow","Medium":"blue","High":"green"}[data.entropy] || "blue";
+
+  rows.innerHTML = `
+    <div class="intel-row"><span class="intel-lbl">Pattern</span><span class="intel-val accent">${esc(data.pattern)}</span></div>
+    <div class="intel-row"><span class="intel-lbl">Type</span><span class="intel-val">${data.isNickname ? '<span class="intel-tag yellow">Nickname / Handle</span>' : '<span class="intel-tag green">Likely real name</span>'}</span></div>
+    <div class="intel-row"><span class="intel-lbl">Possible Name</span><span class="intel-val">${data.possibleName ? esc(data.possibleName) : '<span style="color:var(--sub2)">Not detected</span>'}</span></div>
+    <div class="intel-row"><span class="intel-lbl">Name Origin</span><span class="intel-val">${data.nameOrigin !== "Unknown" ? esc(data.nameOrigin) : '<span style="color:var(--sub2)">Unknown</span>'}</span></div>
+    <div class="intel-row"><span class="intel-lbl">Possible Region</span><span class="intel-val">${data.region !== "Unknown" ? esc(data.region) : '<span style="color:var(--sub2)">Unknown</span>'}</span></div>
+    <div class="intel-row"><span class="intel-lbl">Birth Year</span><span class="intel-val">${data.birthYear ? `<span class="intel-tag yellow">${data.birthYear}</span>` : '<span style="color:var(--sub2)">Not detected</span>'}</span></div>
+    ${data.nameMeaning ? `<div class="intel-row"><span class="intel-lbl">Name Meaning</span><span class="intel-val">${esc(data.nameMeaning)}</span></div>` : ""}
+    ${consistencyHtml}
+    <div class="intel-row"><span class="intel-lbl">Entropy</span><span class="intel-val"><span class="intel-tag ${entropyColor}">${data.entropy}</span></span></div>
+  `;
+}
+
+// ── BIO ANALYSIS ──
+function analyzeBio(bio){
+  if(!bio || bio === "Not visible" || bio.length < 3) return null;
+  const result = {};
+  const bioLower = bio.toLowerCase();
+
+  // Language detection
+  const hasDevanagari = /[\u0900-\u097F]/.test(bio);
+  const hasArabic     = /[\u0600-\u06FF]/.test(bio);
+  const hasCyrillic   = /[\u0400-\u04FF]/.test(bio);
+  const hasLatin      = /[a-zA-Z]{3,}/.test(bio);
+  const hasChinese    = /[\u4E00-\u9FFF]/.test(bio);
+  const hasKorean     = /[\uAC00-\uD7AF]/.test(bio);
+  const langs = [];
+  if(hasDevanagari) langs.push("Hindi");
+  if(hasArabic)     langs.push("Arabic");
+  if(hasCyrillic)   langs.push("Russian");
+  if(hasChinese)    langs.push("Chinese");
+  if(hasKorean)     langs.push("Korean");
+  if(hasLatin)      langs.push("English");
+  result.language = langs.length ? langs.join(" + ") : "Unknown";
+
+  // Name detection
+  let detectedName = null;
+  const namePatterns = [
+    /(?:i(?:'?m|am)\s+)([A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})?)/i,
+    /(?:my\s+name\s+is\s+)([A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})?)/i,
+    /^([A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,}){1,2})\b/,
+  ];
+  for(const p of namePatterns){
+    const m = bio.match(p);
+    if(m){ detectedName = m[1]; break; }
+  }
+  result.detectedName = detectedName;
+
+  // Age detection
+  let detectedAge = null;
+  const agePatterns = [
+    /\b(1[3-9]|[2-5]\d)\s*y(?:\.?o\.?|ears?(?:\s+old)?)/i,
+    /\bage[:\s]+?(1[3-9]|[2-5]\d)\b/i,
+    /\bborn\s+(?:in\s+)?(19[7-9]\d|200[0-9]|201[0-2])/i,
+    /\b(19[7-9]\d|200[0-9]|201[0-2])\s*(?:born|batch|passout)/i,
+    /\bclass\s+of\s+(20[0-9]{2})/i,
+  ];
+  for(const p of agePatterns){
+    const m = bio.match(p);
+    if(m){
+      const val = m[1];
+      if(val.length === 4){ // year
+        detectedAge = (new Date().getFullYear() - parseInt(val)) + " (born " + val + ")";
+      } else {
+        detectedAge = val + " years old";
+      }
+      break;
+    }
+  }
+  result.detectedAge = detectedAge;
+
+  // Gender signals
+  let gender = null;
+  if(/\bhe\/him\b|\b(?:his)\s+(?:bio|page)|👦|🧔|👨/i.test(bio)) gender = "Male";
+  else if(/\bshe\/her\b|\b(?:her)\s+(?:bio|page)|👧|👩|💁‍♀/i.test(bio)) gender = "Female";
+  else if(/\bthey\/them\b/i.test(bio)) gender = "Non-binary";
+  result.gender = gender;
+
+  // Occupation detection
+  const occupations = [
+    ["Developer / Programmer", ["developer","programmer","coder","coding","software","engineer","backend","frontend","fullstack","web dev","app dev","devops","python","javascript","java","flutter","android","ios"]],
+    ["Designer",               ["designer","ui/ux","graphic","creative","figma","photoshop","illustrator","motion","3d artist","animator"]],
+    ["Student",                ["student","studying","btech","mtech","bsc","msc","college","university","school","class of","batch of","undergrad","grad"]],
+    ["Content Creator",        ["youtuber","streamer","creator","content","blogger","vlogger","podcaster","influencer","tiktokker"]],
+    ["Entrepreneur / Business",["founder","ceo","co-founder","entrepreneur","startup","business","investor","venture","agency"]],
+    ["Trader / Finance",       ["trader","trading","crypto trader","forex","stocks","investor","nse","bse","defi","web3","nft"]],
+    ["Writer / Journalist",    ["writer","author","journalist","editor","poet","novelist","storyteller","copywriter"]],
+    ["Artist / Musician",      ["artist","musician","singer","rapper","dj","producer","guitarist","drummer","photographer","filmmaker"]],
+    ["Gamer",                  ["gamer","gaming","esports","streamer","twitch","playstation","xbox","minecraft","pubg","bgmi","valorant","freefire"]],
+    ["Cybersecurity / Hacker", ["hacker","pentester","cybersecurity","infosec","bug bounty","ctf","ethical hacker","osint","red team"]],
+    ["Doctor / Medical",       ["doctor","physician","mbbs","medical","surgeon","nurse","pharmacist","dentist","therapist","psychologist"]],
+  ];
+  let detectedOccupation = null;
+  for(const [label, keywords] of occupations){
+    if(keywords.some(k => bioLower.includes(k))){
+      detectedOccupation = label;
+      break;
+    }
+  }
+  result.occupation = detectedOccupation;
+
+  // Location hints — flag emojis + city/country names
+  const flagMatch = bio.match(/[\u{1F1E0}-\u{1F1FF}]{2}/gu);
+  const locationKeywords = ["india","pakistan","bangladesh","nepal","usa","uk","canada","australia","germany","france","russia","china","japan","korea","dubai","uae","singapore","malaysia","indonesia","nigeria","kenya","egypt","brazil","mexico","delhi","mumbai","bangalore","hyderabad","chennai","kolkata","pune","karachi","lahore","dhaka","london","new york","los angeles","toronto","sydney"];
+  let detectedLocation = null;
+  if(flagMatch && flagMatch.length > 0) detectedLocation = "Flag: " + flagMatch[0];
+  else {
+    for(const loc of locationKeywords){
+      if(bioLower.includes(loc)){
+        detectedLocation = loc.charAt(0).toUpperCase() + loc.slice(1);
+        break;
+      }
+    }
+  }
+  result.location = detectedLocation;
+
+  // Relationship status
+  let relationship = null;
+  if(/\b(?:married|husband|wife|wifey|hubby|spouse)\b/i.test(bio)) relationship = "Married";
+  else if(/\b(?:engaged|fiance|fiancee)\b/i.test(bio)) relationship = "Engaged";
+  else if(/\b(?:in a relationship|taken|not single|committed|boyfriend|girlfriend|bf|gf)\b/i.test(bio)) relationship = "In a relationship";
+  else if(/\bsingle\b/i.test(bio)) relationship = "Single";
+  else if(/\b(?:dad|father|papa|daddy|mom|mother|mama|parent)\b/i.test(bio)) relationship = "Parent";
+  result.relationship = relationship;
+
+  // Religion signals
+  let religion = null;
+  if(/\b(?:muslim|islam|allah|alhamdulillah|mashallah|inshallah|bismillah|quran|namaz|hijab)\b|☪/i.test(bio)) religion = "Islam";
+  else if(/\b(?:christian|jesus|christ|god bless|blessed|church|bible|prayer|amen)\b|✝|🙏/i.test(bio)) religion = "Christianity";
+  else if(/\b(?:hindu|shiv|krishna|ram|hanuman|mandir|temple|jai|bhagwan|mata)\b|🕉|🪷|🙏/i.test(bio)) religion = "Hinduism";
+  else if(/\b(?:sikh|waheguru|punjabi|gurudwara|khalsa)\b|☬/i.test(bio)) religion = "Sikhism";
+  result.religion = religion;
+
+  // Contact info in bio
+  const emailMatch = bio.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  const phoneMatch = bio.match(/(?:\+?[0-9]{1,3}[\s-]?)?(?:\(?[0-9]{3}\)?[\s-]?){2}[0-9]{4}/);
+  result.emailInBio  = emailMatch ? emailMatch[0] : null;
+  result.phoneInBio  = phoneMatch ? phoneMatch[0] : null;
+
+  // Crypto presence
+  const cryptoKeywords = ["bitcoin","btc","ethereum","eth","crypto","nft","web3","defi","blockchain","wallet","binance","coinbase","hodl","satoshi","altcoin","dao","degen"];
+  const btcAddress = bio.match(/\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b/);
+  const ethAddress = bio.match(/\b0x[a-fA-F0-9]{40}\b/);
+  result.cryptoPresence = cryptoKeywords.some(k => bioLower.includes(k)) || !!btcAddress || !!ethAddress;
+  result.cryptoWallet   = btcAddress ? btcAddress[0] : ethAddress ? ethAddress[0] : null;
+
+  // External links
+  const linkPatterns = [
+    {re:/ig\.|(instagram\.com)/i,  label:"Instagram"},
+    {re:/twitter\.com|x\.com/i,    label:"Twitter/X"},
+    {re:/youtube\.com|youtu\.be/i, label:"YouTube"},
+    {re:/wa\.me|whatsapp/i,         label:"WhatsApp"},
+    {re:/t\.me\/|telegram\.me/i,  label:"Telegram"},
+    {re:/linktree|linktr\.ee/i,     label:"Linktree"},
+    {re:/tiktok\.com/i,             label:"TikTok"},
+    {re:/snapchat\.com/i,           label:"Snapchat"},
+    {re:/github\.com/i,             label:"GitHub"},
+    {re:/linkedin\.com/i,           label:"LinkedIn"},
+    {re:/discord\.gg|discord\.com/i, label:"Discord"},
+    {re:/medium\.com/i,             label:"Medium"},
+    {re:/https?:\/\//,              label:"URL"},
+  ];
+  const foundLinks = linkPatterns.filter(p => p.re.test(bio)).map(p => p.label);
+  const bareDomainRe = /(?:^|\s|👉|👆|🔗|➡|→|:|\|)([a-zA-Z0-9][a-zA-Z0-9\-]{1,50}\.[a-zA-Z]{2,10}(?:\/[^\s]*)?)/g;
+  const knownTlds = ["com","io","net","org","dev","app","co","in","me","xyz","tech","info","online","site","web","ai","gg"];
+  let dm;
+  while((dm = bareDomainRe.exec(bio)) !== null){
+    const domain = dm[1].toLowerCase();
+    const tld = domain.split(".").pop().split("/")[0];
+    if(knownTlds.includes(tld) && !linkPatterns.some(p => p.re.test(domain))){
+      foundLinks.push("🌐 " + dm[1]);
+    }
+  }
+  result.links = [...new Set(foundLinks)];
+
+  // Emotion scoring
+  const positiveWords = ["love","happy","blessed","amazing","great","good","best","thank","grateful","joy","peace","hope","smile","wonderful","awesome","proud","success","dream","inspire","motivate","beautiful"];
+  const positiveEmoji = ["😊","😄","😍","🥰","❤","💕","💖","💗","✨","🙏","👍","🌟","⭐","🎉","💪","🔥","😎","🤩"];
+  const negativeWords = ["hate","sad","angry","bad","worst","sick","tired","depressed","broken","alone","cry","pain","hurt","lost","never","kill","die","wrong"];
+  const negativeEmoji = ["😢","😭","😡","💔","😤","😠","🖕","😞","😔","☹","😩","😫"];
+  let posScore = 0, negScore = 0;
+  positiveWords.forEach(w => { if(bioLower.includes(w)) posScore++; });
+  positiveEmoji.forEach(e => { if(bio.includes(e)) posScore++; });
+  negativeWords.forEach(w => { if(bioLower.includes(w)) negScore++; });
+  negativeEmoji.forEach(e => { if(bio.includes(e)) negScore++; });
+  result.emotion = posScore > negScore + 1 ? "Positive" : negScore > posScore + 1 ? "Negative" : posScore > 0 || negScore > 0 ? "Neutral / Mixed" : "Neutral";
+  result.emotionClass = result.emotion === "Positive" ? "green" : result.emotion === "Negative" ? "red" : "yellow";
+
+  // Hashtags & mentions
+  const hashtags = (bio.match(/#\w+/g) || []);
+  const mentions = (bio.match(/@\w+/g) || []);
+  result.keywords = [...hashtags, ...mentions].slice(0, 5);
+
+  // Emoji count
+  const emojiCount = (bio.match(/\p{Emoji_Presentation}/gu) || []).length;
+  result.emojiCount = emojiCount;
+  result.emojiHeavy = emojiCount >= 5;
+
+  return result;
+}
+
+function renderBioIntel(bio){
+  const data = analyzeBio(bio);
+  const tile = document.getElementById("bio-intel-tile");
+  const rows = document.getElementById("bio-intel-rows");
+  if(!data){ tile.style.display="none"; return; }
+  tile.style.display="block";
+
+  const linksHtml = data.links.length
+    ? data.links.map(l=>`<span class="intel-tag blue">${esc(l)}</span>`).join(" ")
+    : '<span style="color:var(--sub2)">None detected</span>';
+
+  const kwHtml = data.keywords.length
+    ? data.keywords.map(k=>`<span class="intel-tag purple">${esc(k)}</span>`).join(" ")
+    : "";
+
+  rows.innerHTML = `
+    <div class="intel-row"><span class="intel-lbl">Language</span><span class="intel-val accent">${esc(data.language)}</span></div>
+    <div class="intel-row"><span class="intel-lbl">Possible Name</span><span class="intel-val">${data.detectedName ? esc(data.detectedName) : '<span style="color:var(--sub2)">Not detected</span>'}</span></div>
+    ${data.detectedAge ? `<div class="intel-row"><span class="intel-lbl">Age</span><span class="intel-val green">${esc(data.detectedAge)}</span></div>` : ""}
+    ${data.gender ? `<div class="intel-row"><span class="intel-lbl">Gender</span><span class="intel-val">${esc(data.gender)}</span></div>` : ""}
+    ${data.occupation ? `<div class="intel-row"><span class="intel-lbl">Occupation</span><span class="intel-val accent">${esc(data.occupation)}</span></div>` : ""}
+    ${data.location ? `<div class="intel-row"><span class="intel-lbl">Location</span><span class="intel-val">${esc(data.location)}</span></div>` : ""}
+    ${data.relationship ? `<div class="intel-row"><span class="intel-lbl">Relationship</span><span class="intel-val">${esc(data.relationship)}</span></div>` : ""}
+    ${data.religion ? `<div class="intel-row"><span class="intel-lbl">Religion</span><span class="intel-val">${esc(data.religion)}</span></div>` : ""}
+    ${data.emailInBio ? `<div class="intel-row"><span class="intel-lbl">Email in Bio</span><span class="intel-val accent">${esc(data.emailInBio)}</span></div>` : ""}
+    ${data.phoneInBio ? `<div class="intel-row"><span class="intel-lbl">Phone in Bio</span><span class="intel-val accent">${esc(data.phoneInBio)}</span></div>` : ""}
+    ${data.cryptoPresence ? `<div class="intel-row"><span class="intel-lbl">Crypto</span><span class="intel-val yellow">${data.cryptoWallet ? esc(data.cryptoWallet.slice(0,16)+"…") : "Mentioned"}</span></div>` : ""}
+    <div class="intel-row"><span class="intel-lbl">External Links</span><span class="intel-val">${linksHtml}</span></div>
+    <div class="intel-row"><span class="intel-lbl">Emotion</span><span class="intel-val"><span class="intel-tag ${data.emotionClass}">${data.emotion}</span></span></div>
+    ${data.emojiHeavy ? `<div class="intel-row"><span class="intel-lbl">Emoji Usage</span><span class="intel-val"><span class="intel-tag yellow">Heavy (${data.emojiCount} emojis)</span></span></div>` : ""}
+    ${kwHtml ? `<div class="intel-row"><span class="intel-lbl">Tags / Mentions</span><span class="intel-val">${kwHtml}</span></div>` : ""}
+  `;
+}
+
+// ── RENDER ALL USERNAMES ──
+function renderAllUsernames(d){
+  const tile = document.getElementById("all-unames-tile");
+  const list = document.getElementById("all-unames-list");
+  const names = d.all_usernames || [];
+  if(names.length <= 1){ tile.style.display="none"; return; }
+  tile.style.display = "block";
+  list.innerHTML = names.map(u =>
+    `<span class="uname-chip">@${esc(u)}</span>`
+  ).join("");
+}
+
+// ── CROSS-PLATFORM SCAN ──
+async function runPlatformScan(username){
+  if(!username || username === "No username") return;
+  const tile  = document.getElementById("platform-tile");
+  const grid  = document.getElementById("platform-grid");
+  const badge = document.getElementById("platform-found-badge");
+
+  // Show tile with skeleton loaders
+  tile.style.display = "block";
+  badge.textContent  = "scanning…";
+  grid.innerHTML = Array(9).fill(0).map((_,i)=>`
+    <div class="platform-item checking">
+      <div class="platform-icon">⏳</div>
+      <div class="platform-info">
+        <div class="platform-name" style="background:var(--border);border-radius:4px;height:12px;width:70px"></div>
+        <div class="platform-status checking" style="margin-top:3px;background:var(--border);border-radius:3px;height:9px;width:40px"></div>
+      </div>
+    </div>`).join("");
+
+  try{
+    const r = await fetch("/api/platform_scan", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({username})
+    });
+    const d = await r.json();
+    if(d.error){ tile.style.display="none"; return; }
+
+    badge.textContent = `${d.found_count} found`;
+    grid.innerHTML = d.results.map(p => {
+      const isFound = p.status === "found";
+      const cls = p.status; // found / available / error / invalid
+      const statusLabel = {
+        found:    "✓ Found",
+        available:"✗ Not found",
+        error:    "~ Error",
+        invalid:  "~ Invalid",
+      }[p.status] || p.status;
+
+      return `<${isFound ? `a href="${p.url}" target="_blank"` : "div"} class="platform-item ${cls}">
+        <div class="platform-icon">${p.icon}</div>
+        <div class="platform-info">
+          <div class="platform-name">${p.name}</div>
+          <div class="platform-status ${cls}">${statusLabel}</div>
+        </div>
+        ${isFound ? `<svg class="platform-ext" viewBox="0 0 24 24" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>` : ""}
+      </${isFound ? "a" : "div"}>`;
+    }).join("");
+
+    // Update trust score with platform data
+    if(_currentData){
+      _currentData._platformResults = d;
+      renderConfidence(_currentData);
+    }
+  } catch(e){
+    tile.style.display = "none";
+  }
+}
+
+// ── LIGHTBOX ──
+function openLb(idx){
+  const item=_media[idx];if(!item)return;
+  const mime=item.mime||(item.type==="video"?"video/mp4":"image/jpeg");
+  const r=b64ToUrl(item.data,mime);if(!r)return;
+  const content=document.getElementById("lb-content");
+  const dateHtml=item.date?`<div style="text-align:center;margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--sub2);">📅 ${esc(item.date)}</div>`:"";
+  content.innerHTML=item.type==="video"
+    ?`<video class="lb-media" src="${r.url}" controls autoplay></video>${dateHtml}`
+    :`<img class="lb-media" src="${r.url}">${dateHtml}`;
+  document.getElementById("lightbox").classList.add("open");
+}
+function closeLb(){document.getElementById("lightbox").classList.remove("open");document.getElementById("lb-content").innerHTML="";}
+function lbOut(e){if(e.target===document.getElementById("lightbox"))closeLb();}
+
+// ── EXPORT JSON ──
+function exportJSON(){
+  if(!_currentData)return;
+  const d=_currentData;
+
+  // Media: photos as data URIs, videos as base64
+  const mediaExport=(d.media||[]).map((item,i)=>{
+    if(item.type==="photo"){
+      const r=b64ToDataUrl(item.data,item.mime);
+      return{index:i+1,type:"photo",mime:item.mime||"image/jpeg",data_uri:r.url};
+    } else {
+      return{index:i+1,type:"video",mime:item.mime||"video/mp4",base64:item.data};
+    }
+  });
+
+  // Username intel
+  const unIntel = analyzeUsername(d.username);
+
+  // Bio analysis
+  const bioIntel = analyzeBio(d.bio);
+
+  // Trust score
+  const trust = calcTrust(d);
+
+  const payload={
+    tool:"Tele-Trace",
+    coder:"Anubhav Kashyap (@anubhavanonymous)",
+    scan_time:d.scan_time,
+    // Core identity
+    user_id:d.user_id,
+    name:d.name,
+    username:d.username,
+    phone:d.phone,
+    bio:d.bio,
+    status:d.status,
+    flags:d.flags,
+    // Intelligence
+    trust_score:{score:trust.score, level:trust.levelLabel, checks:trust.checks.map(c=>({pass:c.pass,detail:c.text}))},
+    account_age:d.age_info,
+    username_intelligence:unIntel ? {
+      pattern:       unIntel.pattern,
+      type:          unIntel.nameType,
+      possible_name: unIntel.possibleName,
+      name_origin:   unIntel.nameOrigin,
+      name_meaning:  unIntel.nameMeaning,
+      region:        unIntel.region,
+      birth_year:    unIntel.birthYear,
+      entropy:       unIntel.entropy,
+    } : null,
+    bio_analysis:bioIntel ? {
+      language:       bioIntel.language,
+      possible_name:  bioIntel.detectedName,
+      age:            bioIntel.detectedAge,
+      gender:         bioIntel.gender,
+      occupation:     bioIntel.occupation,
+      location:       bioIntel.location,
+      relationship:   bioIntel.relationship,
+      religion:       bioIntel.religion,
+      email_in_bio:   bioIntel.emailInBio,
+      phone_in_bio:   bioIntel.phoneInBio,
+      crypto:         bioIntel.cryptoPresence ? (bioIntel.cryptoWallet || "mentioned") : null,
+      external_links: bioIntel.links,
+      emotion:        bioIntel.emotion,
+      emoji_heavy:    bioIntel.emojiHeavy,
+      keywords:       bioIntel.keywords,
+    } : null,
+    history:d.history||null,
+    all_usernames:d.all_usernames||[],
+    cross_platform_search:d._platformResults ? {
+      username: d._platformResults.username,
+      found_count: d._platformResults.found_count,
+      results: d._platformResults.results.map(r=>({
+        platform: r.name,
+        status: r.status,
+        profile_url: r.status==="found" ? r.url : null
+      }))
+    } : null,
+    // Media
+    media_count:d.media_count,
+    media:mediaExport
+  };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=`tele-trace_${d.user_id}_${Date.now()}.json`;
+  a.click();
+}
+
+// ── EXPORT PDF ──
+async function exportPDF(){
+  if(!_currentData)return;
+  const d=_currentData;
+
+  // Build HTML for PDF
+  const photos=_media.filter(m=>m.type==="photo").slice(0,6);
+  let photoHtml="";
+  for(const p of photos){
+    const r=b64ToDataUrl(p.data,p.mime);
+    photoHtml+=`<img src="${r.url}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #2B3A4A;">`;
+  }
+
+  // Compute intel for PDF
+  const trust = calcTrust(d);
+  const unIntel = analyzeUsername(d.username);
+  const bioIntel = analyzeBio(d.bio);
+
+  const flagsHtml=d.flags?Object.entries(d.flags).map(([k,v])=>
+    `<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;margin:2px;background:${v?"rgba(0,230,118,.15)":"rgba(74,101,128,.15)"};color:${v?"#00e676":"#6b8aaa"};border:1px solid ${v?"rgba(0,230,118,.2)":"rgba(74,101,128,.2)"}">
+      ${k.replace("is_","").toUpperCase()}: ${v?"Yes":"No"}
+    </span>`
+  ).join(""):"";
+
+  let smHtml="<i style='color:#6b8aaa'>Not fetched</i>";
+  if(d.history){
+    smHtml="";
+    if(d.history.names&&d.history.names.length){
+      smHtml+="<div style=\'font-size:11px;font-weight:700;color:#9AADB8;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;margin-top:4px\'>Names</div>";
+      d.history.names.forEach(n=>{smHtml+=`<div style=\'display:flex;gap:10px;margin-bottom:3px;align-items:baseline\'><span style=\'color:#6b8aaa;font-size:11px;font-family:monospace;flex-shrink:0\'>[${n.date}]</span><span style=\'color:#e8f0fe;font-size:12px\'>${n.value}</span></div>`;});
+    }
+    if(d.history.usernames&&d.history.usernames.length){
+      smHtml+="<div style=\'font-size:11px;font-weight:700;color:#9AADB8;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;margin-top:10px\'>Usernames</div>";
+      d.history.usernames.forEach(u=>{smHtml+=`<div style=\'display:flex;gap:10px;margin-bottom:3px;align-items:baseline\'><span style=\'color:#6b8aaa;font-size:11px;font-family:monospace;flex-shrink:0\'>[${u.date}]</span><span style=\'color:#00d4ff;font-size:12px\'>${u.value}</span></div>`;});
+    }
+    if(!smHtml)smHtml="<i style='color:#6b8aaa'>No history found</i>";
+  }
+
+  const html=`<!DOCTYPE html><html><head><meta charset='UTF-8'>
+  <style>
+    body{font-family:Arial,sans-serif;background:#0a0e13;color:#e8f0fe;margin:0;padding:24px;font-size:13px;}
+    .header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #1e2d3d;}
+    .logo{font-size:22px;font-weight:700;color:#00d4ff;font-family:monospace;}
+    .sub{font-size:11px;color:#6b8aaa;letter-spacing:1px;}
+    .section{background:#0f1520;border:1px solid #1e2d3d;border-radius:10px;padding:16px;margin-bottom:12px;}
+    .section-title{font-size:10px;font-weight:700;color:#6b8aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+    .row{display:flex;gap:8px;margin-bottom:6px;}
+    .lbl{color:#6b8aaa;min-width:90px;font-size:12px;}
+    .val{color:#e8f0fe;font-family:monospace;font-size:12px;word-break:break-all;}
+    .val.accent{color:#00d4ff;}
+    .photos{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+    .footer{text-align:center;color:#4a6580;font-size:11px;margin-top:20px;padding-top:12px;border-top:1px solid #1e2d3d;}
+  </style></head><body>
+  <div class="header">
+    <div>
+      <div class="logo">Tele-Trace</div>
+      <div class="sub">TELEGRAM INTELLIGENCE REPORT</div>
+    </div>
+    <div style="margin-left:auto;text-align:right;font-size:11px;color:#6b8aaa;">
+      Scan time: ${d.scan_time}<br>
+      By @anubhavanonymous
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Basic Information</div>
+    <div class="row"><span class="lbl">Name</span><span class="val">${d.name}</span></div>
+    <div class="row"><span class="lbl">Username</span><span class="val accent">@${d.username}</span></div>
+    <div class="row"><span class="lbl">User ID</span><span class="val accent">${d.user_id}</span></div>
+    <div class="row"><span class="lbl">Phone</span><span class="val">${d.phone}</span></div>
+    <div class="row"><span class="lbl">Status</span><span class="val">${d.status}</span></div>
+    <div class="row"><span class="lbl">Bio</span><span class="val">${d.bio}</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Trust Score</div>
+    <div class="row"><span class="lbl">Score</span><span class="val accent">${trust.score}% — ${trust.levelLabel}</span></div>
+    ${trust.checks.map(c=>`<div class="row"><span style="min-width:90px;display:inline-block;color:${c.pass?"#00e676":"#ff4444"}">${c.pass?"✓":"✗"}</span><span style="font-size:12px;color:#e8f0fe">${c.text}</span></div>`).join("")}
+  </div>
+
+  <div class="section">
+    <div class="section-title">Account Age Estimate</div>
+    <div class="row"><span class="lbl">Age</span><span class="val accent">${d.age_info?.age||"—"}</span></div>
+    <div class="row"><span class="lbl">Created</span><span class="val">${d.age_info?.range||"—"}</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Account Flags</div>
+    <div>${flagsHtml}</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Username Intelligence</div>
+    ${unIntel ? `
+      <div class="row"><span class="lbl">Pattern</span><span class="val accent">${unIntel.pattern}</span></div>
+      <div class="row"><span class="lbl">Type</span><span class="val">${unIntel.nameType||"—"}</span></div>
+      <div class="row"><span class="lbl">Possible Name</span><span class="val">${unIntel.possibleName||"Not detected"}</span></div>
+      <div class="row"><span class="lbl">Name Origin</span><span class="val">${unIntel.nameOrigin||"Unknown"}</span></div>
+      <div class="row"><span class="lbl">Name Meaning</span><span class="val">${unIntel.nameMeaning||"—"}</span></div>
+      <div class="row"><span class="lbl">Region</span><span class="val">${unIntel.region||"Unknown"}</span></div>
+      <div class="row"><span class="lbl">Birth Year</span><span class="val">${unIntel.birthYear||"Not detected"}</span></div>
+      <div class="row"><span class="lbl">Entropy</span><span class="val">${unIntel.entropy}</span></div>
+    ` : "<i style='color:#6b8aaa'>No username to analyze</i>"}
+  </div>
+
+  <div class="section">
+    <div class="section-title">Bio Analysis</div>
+    ${bioIntel ? `
+      <div class="row"><span class="lbl">Language</span><span class="val accent">${bioIntel.language}</span></div>
+      <div class="row"><span class="lbl">Possible Name</span><span class="val">${bioIntel.detectedName||"Not detected"}</span></div>
+      ${bioIntel.detectedAge ? `<div class="row"><span class="lbl">Age</span><span class="val">${bioIntel.detectedAge}</span></div>` : ""}
+      ${bioIntel.gender ? `<div class="row"><span class="lbl">Gender</span><span class="val">${bioIntel.gender}</span></div>` : ""}
+      ${bioIntel.occupation ? `<div class="row"><span class="lbl">Occupation</span><span class="val">${bioIntel.occupation}</span></div>` : ""}
+      ${bioIntel.location ? `<div class="row"><span class="lbl">Location</span><span class="val">${bioIntel.location}</span></div>` : ""}
+      ${bioIntel.relationship ? `<div class="row"><span class="lbl">Relationship</span><span class="val">${bioIntel.relationship}</span></div>` : ""}
+      ${bioIntel.religion ? `<div class="row"><span class="lbl">Religion</span><span class="val">${bioIntel.religion}</span></div>` : ""}
+      ${bioIntel.emailInBio ? `<div class="row"><span class="lbl">Email in Bio</span><span class="val">${bioIntel.emailInBio}</span></div>` : ""}
+      ${bioIntel.phoneInBio ? `<div class="row"><span class="lbl">Phone in Bio</span><span class="val">${bioIntel.phoneInBio}</span></div>` : ""}
+      ${bioIntel.cryptoPresence ? `<div class="row"><span class="lbl">Crypto</span><span class="val">${bioIntel.cryptoWallet||"Mentioned"}</span></div>` : ""}
+      <div class="row"><span class="lbl">Ext. Links</span><span class="val">${bioIntel.links.join(", ")||"None"}</span></div>
+      <div class="row"><span class="lbl">Emotion</span><span class="val">${bioIntel.emotion}</span></div>
+      ${bioIntel.emojiHeavy ? `<div class="row"><span class="lbl">Emoji Usage</span><span class="val">Heavy (${bioIntel.emojiCount} emojis)</span></div>` : ""}
+      ${bioIntel.keywords.length ? `<div class="row"><span class="lbl">Keywords</span><span class="val">${bioIntel.keywords.join(", ")}</span></div>` : ""}
+    ` : "<i style='color:#6b8aaa'>No bio to analyze</i>"}
+  </div>
+
+  <div class="section">
+    <div class="section-title">Name & Username History</div>
+    <div style="line-height:1.7">${smHtml}</div>
+  </div>
+
+  ${d._platformResults && d._platformResults.results ? `
+  <div class="section">
+    <div class="section-title">Cross-Platform Search</div>
+    <div class="row"><span class="lbl">Username</span><span class="val accent">@${d._platformResults.username||d.username}</span></div>
+    <div class="row"><span class="lbl">Found on</span><span class="val accent">${d._platformResults.found_count} platforms</span></div>
+    ${d._platformResults.results.map(r=>`<div class="row">
+      <span style="min-width:100px;display:inline-block;color:${r.status==='found'?'#00e676':'#6b8aaa'};font-size:12px">${r.status==='found'?'✓ ':'✗ '}${r.name}</span>
+      <span style="color:${r.status==='found'?'#00d4ff':'#4a6580'};font-size:11px">${r.status==='found'?r.url:'—'}</span>
+    </div>`).join('')}
+  </div>` : ''}
+
+  <div class="section">
+    <div class="section-title">Profile Photos (${photos.length} shown, ${d.media_count} total)</div>
+    <div class="photos">${photoHtml||"<i style='color:#6b8aaa'>No photos</i>"}</div>
+  </div>
+
+  <div class="footer">Generated by Tele-Trace · Coder: Anubhav Kashyap (@anubhavanonymous)</div>
+  </body></html>`;
+
+  const blob=new Blob([html],{type:"text/html"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=`tele-trace_${d.user_id}_${Date.now()}.html`;
+  a.click();
+  // Note: true PDF generation requires server-side or puppeteer; this exports as a printable HTML
+  setTimeout(()=>alert("Tip: Open the downloaded file in browser and use Print → Save as PDF for a proper PDF."),300);
+}
+
+// ── LOGOUT ──
+function confirmLogout(){document.getElementById("logout-modal").classList.add("open");}
+function closeModal(){document.getElementById("logout-modal").classList.remove("open");}
+async function doLogout(){
+  closeModal();
+  await fetch("/api/logout",{method:"POST"});
+  ["api-id","api-hash","phone-number","otp-code","twofa-pass"].forEach(id=>{const e=document.getElementById(id);if(e)e.value="";});
+  document.getElementById("step-creds").style.display="block";
+  document.getElementById("step-otp").style.display="none";
+  document.getElementById("step-2fa").style.display="none";
+  document.getElementById("btn-send-code").disabled=false;
+  document.getElementById("btn-send-code").innerHTML="Send OTP →";
+  hideAlert();revokeUrls();_media=[];_currentData=null;
+  showLogin();
+}
+
+// ── UTILS ──
+function initials(name){return(name||"?").split(" ").map(w=>w[0]||"").join("").slice(0,2).toUpperCase()||"?";}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+init();
+</script>
+</body>
+</html>
