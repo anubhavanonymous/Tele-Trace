@@ -1,6 +1,7 @@
 <p align="center">
   <img src="banner.png" alt="Tele-Trace Intelligence Banner" width="100%">
 </p>
+
 ```
   ──────────────────────────────────────────────
        ◈  TELE-TRACE  INTELLIGENCE  ◈
