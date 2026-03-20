@@ -7,42 +7,16 @@
 
 A local web-based Telegram OSINT tool built with Flask + Telethon.
 Runs entirely on your device — no cloud, no data sharing.
-![Python](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python&logoColor=white)
-
-
-
-
-![Linux](https://img.shields.io/badge/Linux-Compatible-yellow?style=for-the-badge&logo=linux&logoColor=black)
-
-
-
-
-![Open Source](https://img.shields.io/badge/Open%20Source-MIT-green?style=for-the-badge&logo=open-source-initiative&logoColor=white)
-
-
-
-
-![Flask](https://img.shields.io/badge/Flask-Backend-grey?style=for-the-badge&logo=flask&logoColor=white)
-
-
-
-
-![Telethon](https://img.shields.io/badge/Telethon-Powered-blue?style=for-the-badge&logo=telegram&logoColor=white)
-
-
-
-
-![Termux](https://img.shields.io/badge/Termux-Supported-black?style=for-the-badge&logo=android&logoColor=white)
-
-
-
-
-![OSINT](https://img.shields.io/badge/OSINT-Tool-red?style=for-the-badge&logo=searchengin&logoColor=white)
-
-
-
-
-![Platform](https://img.shields.io/badge/Platform-Telegram-blue?style=for-the-badge&logo=telegram&logoColor=white)
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python&logoColor=white">
+  <img src="https://img.shields.io/badge/Linux-Compatible-yellow?style=for-the-badge&logo=linux&logoColor=black">
+  <img src="https://img.shields.io/badge/Open%20Source-MIT-green?style=for-the-badge&logo=open-source-initiative&logoColor=white">
+  <img src="https://img.shields.io/badge/Flask-Backend-grey?style=for-the-badge&logo=flask&logoColor=white">
+  <img src="https://img.shields.io/badge/Telethon-Powered-blue?style=for-the-badge&logo=telegram&logoColor=white">
+  <img src="https://img.shields.io/badge/Termux-Supported-black?style=for-the-badge&logo=android&logoColor=white">
+  <img src="https://img.shields.io/badge/OSINT-Tool-red?style=for-the-badge&logo=searchengin&logoColor=white">
+  <img src="https://img.shields.io/badge/Platform-Telegram-blue?style=for-the-badge&logo=telegram&logoColor=white">
+</p>
 ---
 
 ## Requirements
