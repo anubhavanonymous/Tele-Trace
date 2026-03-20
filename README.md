@@ -19,7 +19,7 @@ Runs entirely on your device — no cloud, no data sharing.
 </p>
 ---
 
-## Requirements
+## Requirements 📌
 
 - Python 3.8+
 - Termux (Android) or Linux/macOS
@@ -27,7 +27,7 @@ Runs entirely on your device — no cloud, no data sharing.
 
 ---
 
-## Installation
+## Installation 🛠️
 
 ```bash
 # Clone the repository
@@ -56,7 +56,7 @@ pip install -r requirements.txt --break-system-packages
 
 ---
 
-## Running
+## Running 🚀
 
 ```bash
 python tele-trace.py
@@ -66,7 +66,7 @@ Open **http://localhost:7777** in your browser.
 
 ---
 
-## Login
+## Login 🔑
 
 1. Enter your API ID, API Hash, and phone number
 2. Select your country code from the dropdown
@@ -146,7 +146,7 @@ after scan — clicking opens results instantly.
 
 ---
 
-## Troubleshooting
+## Troubleshooting 💡
 
 | Problem | Fix |
 |---------|-----|
@@ -159,7 +159,7 @@ after scan — clicking opens results instantly.
 
 ---
 
-## Project Structure
+## Project Structure 📁
 
 ```
 tg_osint_tool/
