@@ -53,6 +53,7 @@ pip install -r requirements.txt --break-system-packages
 
 > ⚠ Use an aged Telegram account (1+ years old) for best results. New accounts are heavily restricted by Telegram and may fail to resolve phone number lookups or get temporarily banned from making API requests.
 
+>🔒 It is strongly recommended not to use your real/primary Telegram account. Use a dedicated throwaway account to avoid any risk to your personal account.
 ---
 
 ## Running 🚀
