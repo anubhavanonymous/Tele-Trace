@@ -176,8 +176,8 @@ after scan — clicking opens results instantly.
 ## Project Structure 📁
 
 ```
-tg_osint_tool/
-├── app.py              # Flask backend + Telethon logic
+Tele-Trace/
+├── tele-trace.py              # Flask backend + Telethon logic
 ├── requirements.txt    # Python dependencies
 ├── README.md
 ├── templates/
