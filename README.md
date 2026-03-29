@@ -5,6 +5,8 @@
 
        ◈  TELE-TRACE  INTELLIGENCE
 
+Telegram OSINT and profile analysis tool for research and investigation
+
 A local web-based Telegram OSINT tool built with Flask + Telethon.
 Runs entirely on your device — no cloud, no data sharing.
 <p align="center">
